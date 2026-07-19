@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "seed": "node src/seed.js",
     "seed:cacao": "node src/seed-cacao.js",
+    "seed:lionel": "node src/seed-lionel.js",
     "solana:wallet": "node src/tools/create-solana-wallet.js",
     "solana:check": "node src/tools/check-solana-wallet.js",
     "dev": "node src/server.js",

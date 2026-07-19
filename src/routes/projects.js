@@ -5,7 +5,7 @@ const categoryFilters = {
   "real-estate": { title: "Bienes raices", slugs: ["punta-cana-villas", "santo-domingo-torre"], patterns: ["renta corta", "residencial", "torre", "villas"] },
   agriculture: { title: "Agricultura", slugs: ["finca-cacao-bayaguana"], patterns: ["agro", "cacao", "finca", "agricola"] },
   art: { title: "Arte", patterns: ["arte", "galeria", "coleccion"] },
-  music: { title: "Musica", patterns: ["musica", "royalties", "catalogo"] },
+  music: { title: "Musica", slugs: ["lionel-the-star-entertainment"], patterns: ["musica", "royalties", "catalogo"] },
   tourism: { title: "Turismo", slugs: ["samana-eco-hotel", "punta-cana-villas"], patterns: ["turistica", "hotel", "hospitality", "eco"] },
   business: { title: "Negocios", patterns: ["negocio", "pyme", "empresa"] },
   energy: { title: "Energia", patterns: ["energia", "solar", "renovable"] }

@@ -34,6 +34,7 @@ function layout(title, body, req) {
               <a href="/projects?category=energy">Energia</a>
             </div>
           </div>
+          <a href="/marketplace">Marketplace</a>
           <a href="/invest">${t.invest}</a>
           <a href="/dashboard">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>

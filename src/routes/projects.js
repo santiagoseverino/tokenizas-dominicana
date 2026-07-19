@@ -2,19 +2,33 @@ const store = require("../db");
 const { fact, layout, money, number, projectCard, statusLabel } = require("../lib/ui");
 
 const categoryFilters = {
-  "real-estate": { title: "Bienes raices", patterns: ["renta", "residencial", "inmobiliario", "torre", "villas"] },
-  agriculture: { title: "Agricultura", patterns: ["agro", "cacao", "finca", "agricola"] },
+  "real-estate": { title: "Bienes raices", slugs: ["punta-cana-villas", "santo-domingo-torre"], patterns: ["renta corta", "residencial", "torre", "villas"] },
+  agriculture: { title: "Agricultura", slugs: ["finca-cacao-bayaguana"], patterns: ["agro", "cacao", "finca", "agricola"] },
   art: { title: "Arte", patterns: ["arte", "galeria", "coleccion"] },
   music: { title: "Musica", patterns: ["musica", "royalties", "catalogo"] },
-  tourism: { title: "Turismo", patterns: ["turistica", "hotel", "hospitality", "eco"] },
+  tourism: { title: "Turismo", slugs: ["samana-eco-hotel", "punta-cana-villas"], patterns: ["turistica", "hotel", "hospitality", "eco"] },
   business: { title: "Negocios", patterns: ["negocio", "pyme", "empresa"] },
   energy: { title: "Energia", patterns: ["energia", "solar", "renovable"] }
 };
 
 function projectMatchesCategory(project, category) {
   if (!category || !categoryFilters[category]) return true;
+  if (categoryFilters[category].slugs) return categoryFilters[category].slugs.includes(project.slug);
   const value = `${project.slug} ${project.title} ${project.type} ${project.description}`.toLowerCase();
   return categoryFilters[category].patterns.some((pattern) => value.includes(pattern));
+}
+
+function renderProjectGridPage(req, { title, eyebrow, subtitle, projects }) {
+  return layout(title, `
+    <main class="page">
+      <div class="sectionHead">
+        <p class="eyebrow">${eyebrow}</p>
+        <h1>${title}</h1>
+        <p class="muted">${subtitle}</p>
+      </div>
+      <div class="grid cards">${projects.map(projectCard).join("") || "<p class=\"muted\">Todavia no hay proyectos publicados aqui.</p>"}</div>
+    </main>
+  `, req);
 }
 
 function registerProjectRoutes(app) {
@@ -22,16 +36,27 @@ function registerProjectRoutes(app) {
     const category = String(req.query.category || "");
     const categoryTitle = categoryFilters[category] ? categoryFilters[category].title : "Todos";
     const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC").filter((project) => projectMatchesCategory(project, category));
-    res.send(layout("Proyectos", `
-      <main class="page">
-        <div class="sectionHead">
-          <p class="eyebrow">Marketplace primario</p>
-          <h1>${category === "agriculture" ? "Proyectos de agricultura" : category === "real-estate" ? "Proyectos inmobiliarios" : "Proyectos tokenizables"}</h1>
-          <p class="muted">Categoria: ${categoryTitle}</p>
-        </div>
-        <div class="grid cards">${projects.map(projectCard).join("") || "<p class=\"muted\">Todavia no hay proyectos publicados en esta categoria.</p>"}</div>
-      </main>
-    `, req));
+    res.send(renderProjectGridPage(req, {
+      title: category === "agriculture" ? "Proyectos de agricultura" : category === "real-estate" ? "Proyectos inmobiliarios" : "Proyectos tokenizables",
+      eyebrow: "Marketplace primario",
+      subtitle: `Categoria: ${categoryTitle}`,
+      projects
+    }));
+  });
+
+  app.get("/marketplace", (req, res) => {
+    const projects = store.all(`
+      SELECT p.*
+      FROM projects p
+      JOIN token_mints tm ON tm.project_id = p.id
+      ORDER BY tm.created_at DESC
+    `);
+    res.send(renderProjectGridPage(req, {
+      title: "Marketplace tokenizado",
+      eyebrow: "Tokens configurados",
+      subtitle: "Proyectos que ya tienen mint configurado y estan listos para ordenes, reservas o emision operativa.",
+      projects
+    }));
   });
 
   app.get("/projects/:slug", (req, res) => {

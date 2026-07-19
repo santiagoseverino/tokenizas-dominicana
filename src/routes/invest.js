@@ -38,11 +38,14 @@ function registerInvestRoutes(app) {
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.body.project_id]);
     const amount = Number(req.body.amount || 0);
     if (!project || amount < project.min_investment) return res.status(400).send("Orden invalida");
+    const user = store.get("SELECT * FROM users WHERE email = ?", ["maria@demo.do"]) || store.get("SELECT * FROM users WHERE role = 'investor' ORDER BY id LIMIT 1");
+    if (!user) return res.status(400).send("No hay inversionista demo configurado. Ejecuta npm run seed.");
     const tokens = Math.floor(amount / project.token_price);
-    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (1, ?, ?, ?, ?, 'pending_payment', ?)", [project.id, amount, tokens, req.body.payment_method, new Date().toISOString()]);
+    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending_payment', ?)", [user.id, project.id, amount, tokens, req.body.payment_method, new Date().toISOString()]);
+    const investment = store.get("SELECT id FROM investments WHERE user_id = ? AND project_id = ? ORDER BY id DESC LIMIT 1", [user.id, project.id]);
     store.run("UPDATE offerings SET raised = raised + ? WHERE project_id = ?", [amount, project.id]);
-    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Maria Rodriguez", "created_order", project.title, `${tokens} tokens reservados por ${money.format(amount)}.`, new Date().toISOString()]);
-    res.redirect("/dashboard");
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "created_order", project.title, `${tokens} tokens reservados por ${money.format(amount)}.`, new Date().toISOString()]);
+    res.redirect(`/dashboard?created=${investment.id}`);
   });
 }
 

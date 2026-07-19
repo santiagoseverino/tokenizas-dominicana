@@ -20,9 +20,11 @@ function registerDashboardRoutes(app) {
       ORDER BY tb.updated_at DESC
     `, [user.id]);
     const total = investments.reduce((sum, item) => sum + item.amount, 0);
+    const createdId = Number(req.query.created || 0);
     res.send(layout("Dashboard", `
       <main class="page">
         <div class="sectionHead"><p class="eyebrow">Inversionista</p><h1>${user.name}</h1><p class="muted">KYC: ${statusLabel(user.kyc_status)} - Wallet: ${user.wallet}</p></div>
+        ${createdId ? `<div class="success">Orden creada correctamente. Ya aparece abajo como pago pendiente.</div>` : ""}
         <section class="metrics compact">
           <article><strong>${money.format(total)}</strong><span>Invertido/reservado</span></article>
           <article><strong>${number.format(investments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
@@ -31,7 +33,7 @@ function registerDashboardRoutes(app) {
         <section class="split">
           <div class="panel">
             <h3>Ordenes</h3>
-            <div class="portfolio">${investments.map((item) => `<article class="holding"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p></div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status)}</em></article>`).join("")}</div>
+            <div class="portfolio">${investments.map((item) => `<article class="holding ${createdId === item.id ? "highlight" : ""}"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p></div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status)}</em></article>`).join("")}</div>
           </div>
           <div class="panel">
             <h3>Wallet y tokens</h3>

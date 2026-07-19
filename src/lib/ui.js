@@ -20,7 +20,7 @@ function layout(title, body, req) {
     </head>
     <body>
       <header class="topbar">
-        <a class="brand" href="/"><img src="/dominicana-logo.png" alt="Dominicana.com" width="760" height="184" /></a>
+        <a class="brand" href="/"><img src="/tokenizas-dominicana-logo.png" alt="Tokenizas Dominicana" width="439" height="203" /></a>
         <nav>
           <div class="navDrop">
             <a href="/projects">${t.projects}</a>

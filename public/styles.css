@@ -106,6 +106,7 @@ h3 { font-size: 21px; }
 .button.primary { background: linear-gradient(135deg, var(--brand), #00c2ff); border-color: transparent; color: white; }
 .button.primary:hover { filter: brightness(.96); transform: translateY(-1px); }
 .button.ghost { background: rgba(255,255,255,.12); color: white; border-color: rgba(255,255,255,.45); }
+.button.whatsapp { background: #25d366; color: white; border-color: #25d366; }
 .button.small { padding: 10px 14px; margin-top: 16px; }
 .metrics {
   display: grid;
@@ -238,6 +239,101 @@ input, select {
   color: var(--ink);
   font: inherit;
 }
+textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+.featureBand {
+  background: linear-gradient(180deg, #ffffff, #e9fbf7);
+}
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+.featureCard {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+}
+.featureCard strong {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue);
+  color: var(--gold);
+  border-radius: 50%;
+  margin-bottom: 16px;
+}
+.featureCard p { color: var(--muted); line-height: 1.55; }
+.valueSection {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 34px;
+  background: var(--blue);
+  color: white;
+}
+.valueSection h2 { color: white; }
+.valueList {
+  display: grid;
+  gap: 14px;
+}
+.valueList p {
+  padding: 18px;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,.08);
+}
+.ctaBand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  background: linear-gradient(135deg, #00a896, #00c2ff);
+  color: white;
+}
+.ctaBand h2 { color: white; }
+.contactPage { padding-top: 0; }
+.contactIntro {
+  min-height: calc(100vh - 76px);
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(360px, .7fr);
+  gap: 34px;
+  align-items: center;
+  padding: 54px 0;
+}
+.contactForm {
+  display: grid;
+  gap: 16px;
+}
+.checkLine {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.checkLine input {
+  width: auto;
+  margin-top: 3px;
+}
+.success {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #e8fff6;
+  color: #067a5a;
+  border: 1px solid #a8f0d0;
+  font-weight: 750;
+}
 .investPage {
   display: grid;
   grid-template-columns: minmax(320px, .72fr) minmax(0, 1.28fr);
@@ -296,8 +392,11 @@ input, select {
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
+  .contactPage { padding-top: 0; }
+  .contactIntro { padding: 36px 0; }
+  .ctaBand { align-items: flex-start; flex-direction: column; }
   .legalHero { padding: 42px 18px 24px; }
   .legalGrid { padding: 24px 18px; }
   .legalNote { margin: 0 18px 32px; }

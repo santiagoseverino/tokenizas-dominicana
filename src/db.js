@@ -114,6 +114,18 @@ function migrate() {
       details TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      company TEXT,
+      email TEXT NOT NULL,
+      whatsapp TEXT,
+      interest TEXT NOT NULL,
+      message TEXT,
+      consent TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 }
 

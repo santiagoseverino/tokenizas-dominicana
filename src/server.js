@@ -25,6 +25,7 @@ const port = process.env.PORT || 3000;
 const adminUser = process.env.ADMIN_USER || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "TokenizasAdmin2026!";
 const sessionSecret = process.env.SESSION_SECRET || "change-this-tokenizas-secret";
+const whatsappNumber = process.env.WHATSAPP_NUMBER || "18090000000";
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -46,6 +47,7 @@ const number = new Intl.NumberFormat("en-US");
 const i18n = {
   es: {
     projects: "Proyectos", invest: "Invertir", dashboard: "Dashboard", legal: "Ley RD", login: "Login",
+    contact: "Contacto", whatsapp: "WhatsApp",
     heroEyebrow: "Tokenizacion inmobiliaria en Solana",
     heroTitle: "Invierte de forma fraccionada en proyectos inmobiliarios dominicanos.",
     heroLead: "Plataforma demo para originar activos, validar inversionistas, estructurar ofertas, emitir tokens controlados y administrar distribuciones.",
@@ -56,9 +58,11 @@ const i18n = {
     legal2: "Si el token funciona como valor mobiliario, debe revisarse con asesores legales y, cuando aplique, con la Superintendencia del Mercado de Valores.",
     legal3: "La plataforma debe separar claramente registro legal, contratos, cap table interno y registro blockchain.",
     loginTitle: "Panel administrativo", loginLead: "Ingresa tus credenciales para administrar proyectos, KYC y auditoria.", privateAccess: "Acceso privado", username: "Usuario", password: "Clave", enter: "Entrar", logout: "Cerrar sesion"
+    , contactTitle: "Solicita mas informacion", contactLead: "Cuéntanos sobre tu proyecto, inmueble o perfil de inversionista. Te contactaremos por email o WhatsApp.", name: "Nombre", company: "Empresa", email: "Email", phone: "WhatsApp", interest: "Interes", message: "Mensaje", consent: "Acepto ser contactado sobre Tokenizas Dominicana.", send: "Enviar solicitud", leadSaved: "Solicitud recibida. Te contactaremos pronto.", modulesTitle: "Una plataforma completa para tokenizar activos", modulesLead: "Integramos originacion, cumplimiento, contratos, inversionistas y operaciones en una sola experiencia.", backOffice: "Back office de activos", backOfficeText: "Gestion de cartera, documentos, estados de ofertas, solicitudes de inversionistas y registro de auditoria.", smartContracts: "Motor blockchain", smartContractsText: "Emision controlada de tokens en Solana, reglas de transferencia, whitelist y eventos verificables.", investorPortal: "Portal del inversionista", investorPortalText: "Dashboard con proyectos, tokens, ordenes, distribuciones y documentos relevantes.", landingPages: "Paginas por proyecto", landingPagesText: "Fichas comerciales optimizadas con imagenes, estructura legal, metricas, riesgos y llamados a inversion.", advantagesTitle: "Por que elegir Tokenizas Dominicana", useCasesTitle: "Casos de uso", demoTitle: "Agenda una consulta"
   },
   en: {
     projects: "Projects", invest: "Invest", dashboard: "Dashboard", legal: "DR Law", login: "Login",
+    contact: "Contact", whatsapp: "WhatsApp",
     heroEyebrow: "Real estate tokenization on Solana",
     heroTitle: "Fractional access to Dominican real estate projects.",
     heroLead: "A demo platform to originate assets, validate investors, structure offerings, issue controlled tokens, and manage distributions.",
@@ -68,10 +72,12 @@ const i18n = {
     legal1: "A real estate token should not be presented as a registered property title. It usually represents an economic, contractual, or vehicle-level right.",
     legal2: "If the token behaves as a security, it should be reviewed by counsel and, where applicable, the securities regulator.",
     legal3: "The platform must clearly separate the legal registry, contracts, internal cap table, and blockchain record.",
-    loginTitle: "Admin panel", loginLead: "Enter your credentials to manage projects, KYC, and audit records.", privateAccess: "Private access", username: "Username", password: "Password", enter: "Sign in", logout: "Log out"
+    loginTitle: "Admin panel", loginLead: "Enter your credentials to manage projects, KYC, and audit records.", privateAccess: "Private access", username: "Username", password: "Password", enter: "Sign in", logout: "Log out",
+    contactTitle: "Request more information", contactLead: "Tell us about your project, property, or investor profile. We will contact you by email or WhatsApp.", name: "Name", company: "Company", email: "Email", phone: "WhatsApp", interest: "Interest", message: "Message", consent: "I agree to be contacted about Tokenizas Dominicana.", send: "Send request", leadSaved: "Request received. We will contact you soon.", modulesTitle: "A complete platform for asset tokenization", modulesLead: "Origination, compliance, contracts, investors, and operations in one experience.", backOffice: "Asset back office", backOfficeText: "Portfolio management, documents, offering status, investor requests, and audit records.", smartContracts: "Blockchain engine", smartContractsText: "Controlled Solana token issuance, transfer rules, whitelist, and verifiable events.", investorPortal: "Investor portal", investorPortalText: "Dashboard with projects, tokens, orders, distributions, and documents.", landingPages: "Project pages", landingPagesText: "Commercial pages with images, legal structure, metrics, risks, and investment calls to action.", advantagesTitle: "Why choose Tokenizas Dominicana", useCasesTitle: "Use cases", demoTitle: "Book a consultation"
   },
   de: {
     projects: "Projekte", invest: "Investieren", dashboard: "Dashboard", legal: "Recht RD", login: "Login",
+    contact: "Kontakt", whatsapp: "WhatsApp",
     heroEyebrow: "Immobilien-Tokenisierung auf Solana",
     heroTitle: "Fraktionierter Zugang zu Immobilienprojekten in der Dominikanischen Republik.",
     heroLead: "Demo-Plattform fuer Asset-Originierung, Investorenpruefung, Angebotsstrukturierung, kontrollierte Token-Ausgabe und Ausschüttungen.",
@@ -81,10 +87,12 @@ const i18n = {
     legal1: "Ein Immobilien-Token sollte nicht als registrierter Eigentumstitel dargestellt werden. Meist repraesentiert er ein wirtschaftliches, vertragliches oder vehikelbezogenes Recht.",
     legal2: "Wenn der Token wie ein Wertpapier wirkt, sollte er rechtlich und gegebenenfalls mit der Wertpapieraufsicht geprueft werden.",
     legal3: "Die Plattform muss Grundbuch, Verträge, interne Beteiligungstabelle und Blockchain-Eintrag klar trennen.",
-    loginTitle: "Adminbereich", loginLead: "Melde dich an, um Projekte, KYC und Auditdaten zu verwalten.", privateAccess: "Privater Zugang", username: "Benutzer", password: "Passwort", enter: "Einloggen", logout: "Abmelden"
+    loginTitle: "Adminbereich", loginLead: "Melde dich an, um Projekte, KYC und Auditdaten zu verwalten.", privateAccess: "Privater Zugang", username: "Benutzer", password: "Passwort", enter: "Einloggen", logout: "Abmelden",
+    contactTitle: "Weitere Informationen anfordern", contactLead: "Erzaehle uns von deinem Projekt, deiner Immobilie oder deinem Anlegerprofil. Wir melden uns per E-Mail oder WhatsApp.", name: "Name", company: "Unternehmen", email: "E-Mail", phone: "WhatsApp", interest: "Interesse", message: "Nachricht", consent: "Ich stimme zu, zu Tokenizas Dominicana kontaktiert zu werden.", send: "Anfrage senden", leadSaved: "Anfrage erhalten. Wir melden uns bald.", modulesTitle: "Eine komplette Plattform fuer Asset-Tokenisierung", modulesLead: "Originierung, Compliance, Vertraege, Investoren und Betrieb in einer Erfahrung.", backOffice: "Asset Back Office", backOfficeText: "Portfolioverwaltung, Dokumente, Angebotsstatus, Investorenanfragen und Auditprotokolle.", smartContracts: "Blockchain Engine", smartContractsText: "Kontrollierte Solana-Token-Ausgabe, Transferregeln, Whitelist und pruefbare Events.", investorPortal: "Investorenportal", investorPortalText: "Dashboard mit Projekten, Tokens, Orders, Ausschüttungen und Dokumenten.", landingPages: "Projektseiten", landingPagesText: "Kommerzielle Seiten mit Bildern, Rechtsstruktur, Kennzahlen, Risiken und Investment-Aufrufen.", advantagesTitle: "Warum Tokenizas Dominicana", useCasesTitle: "Anwendungsfaelle", demoTitle: "Beratung buchen"
   },
   fr: {
     projects: "Projets", invest: "Investir", dashboard: "Tableau", legal: "Loi RD", login: "Connexion",
+    contact: "Contact", whatsapp: "WhatsApp",
     heroEyebrow: "Tokenisation immobiliere sur Solana",
     heroTitle: "Acces fractionne aux projets immobiliers dominicains.",
     heroLead: "Plateforme de demo pour sourcer les actifs, verifier les investisseurs, structurer les offres, emettre des tokens controles et gerer les distributions.",
@@ -94,7 +102,8 @@ const i18n = {
     legal1: "Un token immobilier ne doit pas etre presente comme un titre de propriete enregistre. Il represente generalement un droit economique, contractuel ou lie a un vehicule juridique.",
     legal2: "Si le token fonctionne comme une valeur mobiliere, il doit etre examine par des conseillers juridiques et, le cas echeant, par le regulateur des valeurs mobilieres.",
     legal3: "La plateforme doit separer clairement le registre legal, les contrats, le cap table interne et l'enregistrement blockchain.",
-    loginTitle: "Panneau admin", loginLead: "Connectez-vous pour gerer les projets, KYC et journaux d'audit.", privateAccess: "Acces prive", username: "Utilisateur", password: "Mot de passe", enter: "Connexion", logout: "Deconnexion"
+    loginTitle: "Panneau admin", loginLead: "Connectez-vous pour gerer les projets, KYC et journaux d'audit.", privateAccess: "Acces prive", username: "Utilisateur", password: "Mot de passe", enter: "Connexion", logout: "Deconnexion",
+    contactTitle: "Demander plus d'informations", contactLead: "Parlez-nous de votre projet, bien immobilier ou profil investisseur. Nous vous contacterons par email ou WhatsApp.", name: "Nom", company: "Entreprise", email: "Email", phone: "WhatsApp", interest: "Interet", message: "Message", consent: "J'accepte d'etre contacte au sujet de Tokenizas Dominicana.", send: "Envoyer", leadSaved: "Demande recue. Nous vous contacterons bientot.", modulesTitle: "Une plateforme complete pour la tokenisation d'actifs", modulesLead: "Origination, conformite, contrats, investisseurs et operations dans une seule experience.", backOffice: "Back office actifs", backOfficeText: "Gestion de portefeuille, documents, statut des offres, demandes investisseurs et audit.", smartContracts: "Moteur blockchain", smartContractsText: "Emission controlee de tokens Solana, regles de transfert, whitelist et evenements verifiables.", investorPortal: "Portail investisseur", investorPortalText: "Tableau avec projets, tokens, ordres, distributions et documents.", landingPages: "Pages projet", landingPagesText: "Pages commerciales avec images, structure legale, indicateurs, risques et appels a investir.", advantagesTitle: "Pourquoi choisir Tokenizas Dominicana", useCasesTitle: "Cas d'utilisation", demoTitle: "Planifier une consultation"
   }
 };
 
@@ -133,6 +142,7 @@ function layout(title, body, req) {
           <a href="/invest">${t.invest}</a>
           <a href="/dashboard">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>
+          <a href="/contact">${t.contact}</a>
         </nav>
         ${req ? langSwitcher(req) : ""}
       </header>
@@ -248,6 +258,41 @@ app.get("/", (req, res) => {
         </div>
         <div class="grid cards">${projects.map(projectCard).join("")}</div>
       </section>
+      <section class="section featureBand">
+        <div class="sectionHead">
+          <p class="eyebrow">Tokenization platform</p>
+          <h2>${t.modulesTitle}</h2>
+          <p class="muted">${t.modulesLead}</p>
+        </div>
+        <div class="grid featureGrid">
+          ${featureCard(t.backOffice, t.backOfficeText, "01")}
+          ${featureCard(t.smartContracts, t.smartContractsText, "02")}
+          ${featureCard(t.investorPortal, t.investorPortalText, "03")}
+          ${featureCard(t.landingPages, t.landingPagesText, "04")}
+        </div>
+      </section>
+      <section class="section valueSection">
+        <div>
+          <p class="eyebrow">${t.advantagesTitle}</p>
+          <h2>Built for issuers, developers, family offices and cross-border investors.</h2>
+        </div>
+        <div class="valueList">
+          <p>Due diligence workflow, project documentation, investor eligibility and cap table visibility.</p>
+          <p>Primary offerings, controlled transfers, operational reporting and distribution tracking.</p>
+          <p>White-label style pages for each project with professional visuals and compliance-first language.</p>
+        </div>
+      </section>
+      <section class="section ctaBand">
+        <div>
+          <p class="eyebrow">${t.demoTitle}</p>
+          <h2>${t.contactTitle}</h2>
+          <p>${t.contactLead}</p>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="/contact">${t.contact}</a>
+          <a class="button whatsapp" href="${whatsappUrl(t.contactTitle)}" target="_blank" rel="noopener">${t.whatsapp}</a>
+        </div>
+      </section>
     </main>
   `, req));
 });
@@ -307,6 +352,44 @@ app.get("/legal", (req, res) => {
       </section>
     </main>
   `, req));
+});
+
+app.get("/contact", (req, res) => {
+  res.send(contactPage(req));
+});
+
+app.post("/contact", (req, res) => {
+  const t = tr(req);
+  const name = String(req.body.name || "").trim();
+  const email = String(req.body.email || "").trim();
+  const interest = String(req.body.interest || "").trim();
+  if (!name || !email || !interest || req.body.consent !== "yes") {
+    return res.status(400).send(contactPage(req, "Completa nombre, email, interes y consentimiento."));
+  }
+
+  store.run(`
+    INSERT INTO leads (name, company, email, whatsapp, interest, message, consent, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    name,
+    String(req.body.company || "").trim(),
+    email,
+    String(req.body.whatsapp || "").trim(),
+    interest,
+    String(req.body.message || "").trim(),
+    "yes",
+    new Date().toISOString()
+  ]);
+
+  store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [
+    name,
+    "created_lead",
+    "contact",
+    `${interest} - ${email}`,
+    new Date().toISOString()
+  ]);
+
+  res.send(contactPage(req, "", t.leadSaved));
 });
 
 app.get("/projects", (req, res) => {
@@ -532,6 +615,67 @@ app.get("/admin", requireAdmin, (req, res) => {
 
 function fact(label, value) {
   return `<div class="fact"><span>${label}</span><strong>${value}</strong></div>`;
+}
+
+function featureCard(title, text, index) {
+  return `<article class="featureCard">
+    <strong>${index}</strong>
+    <h3>${title}</h3>
+    <p>${text}</p>
+  </article>`;
+}
+
+function whatsappUrl(message) {
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
+function contactPage(req, error = "", success = "") {
+  const t = tr(req);
+  return layout(t.contactTitle, `
+    <main class="page contactPage">
+      <section class="contactIntro">
+        <div>
+          <p class="eyebrow">${t.demoTitle}</p>
+          <h1>${t.contactTitle}</h1>
+          <p class="lead">${t.contactLead}</p>
+          <a class="button whatsapp" href="${whatsappUrl(t.contactTitle)}" target="_blank" rel="noopener">${t.whatsapp}</a>
+        </div>
+        <form class="panel contactForm" method="post" action="/contact">
+          ${error ? `<div class="alert">${error}</div>` : ""}
+          ${success ? `<div class="success">${success}</div>` : ""}
+          <label>${t.name}
+            <input name="name" required />
+          </label>
+          <label>${t.company}
+            <input name="company" />
+          </label>
+          <label>${t.email}
+            <input name="email" type="email" required />
+          </label>
+          <label>${t.phone}
+            <input name="whatsapp" />
+          </label>
+          <label>${t.interest}
+            <select name="interest" required>
+              <option value="">Seleccionar</option>
+              <option>Invertir en proyectos inmobiliarios</option>
+              <option>Tokenizar un inmueble</option>
+              <option>Crear plataforma white-label</option>
+              <option>Alianza legal, financiera o tecnologica</option>
+            </select>
+          </label>
+          <label>${t.message}
+            <textarea name="message" rows="5"></textarea>
+          </label>
+          <label class="checkLine">
+            <input name="consent" type="checkbox" value="yes" required />
+            <span>${t.consent}</span>
+          </label>
+          <button class="button primary" type="submit">${t.send}</button>
+        </form>
+      </section>
+    </main>
+  `, req);
 }
 
 function projectCard(project) {

@@ -406,6 +406,12 @@ textarea {
   font-weight: 850;
 }
 .event { padding: 13px 0; border-bottom: 1px solid var(--line); }
+.event.highlightBox {
+  padding: 13px;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: #f0fffb;
+}
 .event b, .event span { display: block; }
 .event span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .event p { margin: 7px 0 0; color: var(--muted); }

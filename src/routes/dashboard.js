@@ -19,6 +19,8 @@ function registerDashboardRoutes(app) {
       WHERE tb.user_id = ?
       ORDER BY tb.updated_at DESC
     `, [user.id]);
+    const balanceProjectIds = new Set(balances.map((balance) => Number(balance.project_id)));
+    const reservedTokens = investments.filter((item) => item.status !== "tokens_issued" || !balanceProjectIds.has(Number(item.project_id)));
     const total = investments.reduce((sum, item) => sum + item.amount, 0);
     const createdId = Number(req.query.created || 0);
     res.send(layout("Dashboard", `
@@ -37,7 +39,9 @@ function registerDashboardRoutes(app) {
           </div>
           <div class="panel">
             <h3>Wallet y tokens</h3>
-            ${balances.map((balance) => `<div class="event"><b>${balance.balance} ${balance.token_symbol}</b><span>${balance.project_title}</span><p>Bloqueados: ${balance.locked_balance}</p><span>Mint: ${balance.mint_address || "pendiente"}</span><span>Wallet: ${balance.wallet_address}</span></div>`).join("") || "<p class=\"muted\">Sin tokens emitidos todavia.</p>"}
+            ${balances.map((balance) => `<div class="event"><b>${balance.balance} ${balance.token_symbol}</b><span>${balance.project_title}</span><p>Emitidos / bloqueados: ${balance.locked_balance}</p><span>Mint: ${balance.mint_address || "pendiente"}</span><span>Wallet: ${balance.wallet_address}</span></div>`).join("")}
+            ${reservedTokens.map((item) => `<div class="event ${createdId === item.id ? "highlightBox" : ""}"><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${item.title}</span><p>${statusLabel(item.status)} - tokens reservados, pendientes de emision</p><span>Monto: ${money.format(item.amount)}</span><span>Wallet: pendiente hasta emision</span></div>`).join("")}
+            ${!balances.length && !reservedTokens.length ? "<p class=\"muted\">Sin tokens ni reservas todavia.</p>" : ""}
           </div>
         </section>
       </main>

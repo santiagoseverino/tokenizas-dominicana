@@ -1,11 +1,13 @@
 :root {
-  --ink: #18211f;
-  --muted: #67716d;
-  --line: #dbe3df;
-  --bg: #f6f8f5;
-  --brand: #008c72;
-  --brand-dark: #006654;
-  --gold: #c4923b;
+  --ink: #082f49;
+  --muted: #5b677a;
+  --line: #d5e2ea;
+  --bg: #f3f8fb;
+  --brand: #00a896;
+  --brand-dark: #007f73;
+  --blue: #003f5c;
+  --gold: #f7c948;
+  --coral: #ff6b6b;
   --white: #ffffff;
 }
 
@@ -18,8 +20,8 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 .topbar {
-  height: 72px;
-  padding: 0 32px;
+  min-height: 76px;
+  padding: 12px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -30,9 +32,29 @@ a { color: inherit; text-decoration: none; }
   z-index: 10;
   backdrop-filter: blur(14px);
 }
-.brand { font-weight: 850; font-size: 22px; }
-.brand span { color: var(--brand); }
+.brand { display: inline-flex; align-items: center; }
+.brand img { width: 220px; max-width: 46vw; height: auto; display: block; }
 nav { display: flex; gap: 22px; color: var(--muted); font-weight: 650; }
+nav a:hover { color: var(--brand-dark); }
+.langSwitch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #e7f6f3;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.langSwitch a {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+.langSwitch a.active {
+  background: var(--blue);
+  color: white;
+}
 .hero, .detailHero {
   min-height: calc(100vh - 72px);
   position: relative;
@@ -46,7 +68,7 @@ nav { display: flex; gap: 22px; color: var(--muted); font-weight: 650; }
 .heroOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(10,31,27,.82), rgba(10,31,27,.42), rgba(10,31,27,.12));
+  background: linear-gradient(90deg, rgba(0,63,92,.88), rgba(0,168,150,.46), rgba(255,107,107,.16));
 }
 .heroContent {
   position: relative;
@@ -81,7 +103,8 @@ h3 { font-size: 21px; }
   align-items: center;
   justify-content: center;
 }
-.button.primary { background: var(--brand); border-color: var(--brand); color: white; }
+.button.primary { background: linear-gradient(135deg, var(--brand), #00c2ff); border-color: transparent; color: white; }
+.button.primary:hover { filter: brightness(.96); transform: translateY(-1px); }
 .button.ghost { background: rgba(255,255,255,.12); color: white; border-color: rgba(255,255,255,.45); }
 .button.small { padding: 10px 14px; margin-top: 16px; }
 .metrics {
@@ -107,6 +130,33 @@ h3 { font-size: 21px; }
     linear-gradient(90deg, rgba(10,31,27,.74), rgba(10,31,27,.2)),
     url("https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=85") center/cover;
 }
+.legalHero {
+  padding: 74px 42px 32px;
+  background:
+    linear-gradient(135deg, rgba(0,63,92,.96), rgba(0,168,150,.82)),
+    url("https://images.unsplash.com/photo-1560520031-3a4dc4e9de0c?auto=format&fit=crop&w=1600&q=85") center/cover;
+  color: white;
+}
+.legalHero .sectionHead { max-width: 980px; margin-bottom: 0; }
+.legalHero h1 { color: white; }
+.legalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding: 36px 42px;
+}
+.lawCard strong {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--blue);
+  background: var(--gold);
+  margin-bottom: 18px;
+}
+.legalNote { margin: 0 42px 48px; }
 .loginPanel {
   width: min(100%, 460px);
   display: grid;
@@ -241,12 +291,16 @@ input, select {
 
 @media (max-width: 900px) {
   .topbar { height: auto; padding: 18px; align-items: flex-start; gap: 14px; flex-direction: column; }
-  nav { width: 100%; justify-content: space-between; gap: 10px; }
+  nav { width: 100%; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .langSwitch { align-self: stretch; justify-content: space-between; }
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
+  .legalHero { padding: 42px 18px 24px; }
+  .legalGrid { padding: 24px 18px; }
+  .legalNote { margin: 0 18px 32px; }
   .metrics article { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px; }
   .investPanel { position: static; }
   .miniProject img { width: 100%; height: 190px; }

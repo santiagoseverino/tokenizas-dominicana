@@ -29,6 +29,12 @@ const sessionSecret = process.env.SESSION_SECRET || "change-this-tokenizas-secre
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
+app.use((req, res, next) => {
+  if (req.query.lang && ["es", "en", "de", "fr"].includes(req.query.lang)) {
+    res.setHeader("Set-Cookie", `tokenizas_lang=${req.query.lang}; Path=/; SameSite=Lax; Max-Age=31536000`);
+  }
+  next();
+});
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "tokenizas-dominicana" });
@@ -37,9 +43,81 @@ app.get("/health", (req, res) => {
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const number = new Intl.NumberFormat("en-US");
 
-function layout(title, body) {
+const i18n = {
+  es: {
+    projects: "Proyectos", invest: "Invertir", dashboard: "Dashboard", legal: "Ley RD", login: "Login",
+    heroEyebrow: "Tokenizacion inmobiliaria en Solana",
+    heroTitle: "Invierte de forma fraccionada en proyectos inmobiliarios dominicanos.",
+    heroLead: "Plataforma demo para originar activos, validar inversionistas, estructurar ofertas, emitir tokens controlados y administrar distribuciones.",
+    viewProjects: "Ver proyectos", createOrder: "Crear orden", pilotProjects: "Proyectos piloto", targetCapital: "Capital objetivo", reservedCapital: "Capital reservado",
+    pipeline: "Pipeline", readyAssets: "Activos listos para pruebas", legalTitle: "Marco legal sobre tokens en Republica Dominicana",
+    legalLead: "Republica Dominicana no tiene una ley cripto integral especifica para tokenizacion inmobiliaria. El camino prudente es estructurar ofertas que puedan calificar como valores bajo la Ley 249-17 y la supervision de la SIMV, con KYC/AML, prospecto/documentacion y proteccion al inversionista. Los criptoactivos no son moneda de curso legal ni tienen respaldo del Banco Central.",
+    legal1: "Un token inmobiliario no debe presentarse como titulo de propiedad registrado. Normalmente representa un derecho economico, contractual o participacion en un vehiculo legal.",
+    legal2: "Si el token funciona como valor mobiliario, debe revisarse con asesores legales y, cuando aplique, con la Superintendencia del Mercado de Valores.",
+    legal3: "La plataforma debe separar claramente registro legal, contratos, cap table interno y registro blockchain.",
+    loginTitle: "Panel administrativo", loginLead: "Ingresa tus credenciales para administrar proyectos, KYC y auditoria.", privateAccess: "Acceso privado", username: "Usuario", password: "Clave", enter: "Entrar", logout: "Cerrar sesion"
+  },
+  en: {
+    projects: "Projects", invest: "Invest", dashboard: "Dashboard", legal: "DR Law", login: "Login",
+    heroEyebrow: "Real estate tokenization on Solana",
+    heroTitle: "Fractional access to Dominican real estate projects.",
+    heroLead: "A demo platform to originate assets, validate investors, structure offerings, issue controlled tokens, and manage distributions.",
+    viewProjects: "View projects", createOrder: "Create order", pilotProjects: "Pilot projects", targetCapital: "Target capital", reservedCapital: "Reserved capital",
+    pipeline: "Pipeline", readyAssets: "Assets ready for testing", legalTitle: "Token law in the Dominican Republic",
+    legalLead: "The Dominican Republic does not yet have a comprehensive crypto statute specifically for real estate tokenization. The prudent route is to structure offerings that may qualify as securities under Law 249-17 and SIMV supervision, with KYC/AML, disclosure documents, and investor protection. Cryptoassets are not legal tender and are not backed by the Central Bank.",
+    legal1: "A real estate token should not be presented as a registered property title. It usually represents an economic, contractual, or vehicle-level right.",
+    legal2: "If the token behaves as a security, it should be reviewed by counsel and, where applicable, the securities regulator.",
+    legal3: "The platform must clearly separate the legal registry, contracts, internal cap table, and blockchain record.",
+    loginTitle: "Admin panel", loginLead: "Enter your credentials to manage projects, KYC, and audit records.", privateAccess: "Private access", username: "Username", password: "Password", enter: "Sign in", logout: "Log out"
+  },
+  de: {
+    projects: "Projekte", invest: "Investieren", dashboard: "Dashboard", legal: "Recht RD", login: "Login",
+    heroEyebrow: "Immobilien-Tokenisierung auf Solana",
+    heroTitle: "Fraktionierter Zugang zu Immobilienprojekten in der Dominikanischen Republik.",
+    heroLead: "Demo-Plattform fuer Asset-Originierung, Investorenpruefung, Angebotsstrukturierung, kontrollierte Token-Ausgabe und Ausschüttungen.",
+    viewProjects: "Projekte ansehen", createOrder: "Order erstellen", pilotProjects: "Pilotprojekte", targetCapital: "Zielkapital", reservedCapital: "Reserviertes Kapital",
+    pipeline: "Pipeline", readyAssets: "Assets fuer Tests bereit", legalTitle: "Token-Rechtslage in der Dominikanischen Republik",
+    legalLead: "Die Dominikanische Republik hat noch kein umfassendes Kryptogesetz speziell fuer Immobilien-Tokenisierung. Der vorsichtige Weg ist eine Strukturierung als moegliches Wertpapier unter Gesetz 249-17 und SIMV-Aufsicht, mit KYC/AML, Offenlegungsunterlagen und Investorenschutz. Kryptoassets sind kein gesetzliches Zahlungsmittel und werden nicht von der Zentralbank garantiert.",
+    legal1: "Ein Immobilien-Token sollte nicht als registrierter Eigentumstitel dargestellt werden. Meist repraesentiert er ein wirtschaftliches, vertragliches oder vehikelbezogenes Recht.",
+    legal2: "Wenn der Token wie ein Wertpapier wirkt, sollte er rechtlich und gegebenenfalls mit der Wertpapieraufsicht geprueft werden.",
+    legal3: "Die Plattform muss Grundbuch, Verträge, interne Beteiligungstabelle und Blockchain-Eintrag klar trennen.",
+    loginTitle: "Adminbereich", loginLead: "Melde dich an, um Projekte, KYC und Auditdaten zu verwalten.", privateAccess: "Privater Zugang", username: "Benutzer", password: "Passwort", enter: "Einloggen", logout: "Abmelden"
+  },
+  fr: {
+    projects: "Projets", invest: "Investir", dashboard: "Tableau", legal: "Loi RD", login: "Connexion",
+    heroEyebrow: "Tokenisation immobiliere sur Solana",
+    heroTitle: "Acces fractionne aux projets immobiliers dominicains.",
+    heroLead: "Plateforme de demo pour sourcer les actifs, verifier les investisseurs, structurer les offres, emettre des tokens controles et gerer les distributions.",
+    viewProjects: "Voir les projets", createOrder: "Creer un ordre", pilotProjects: "Projets pilotes", targetCapital: "Capital cible", reservedCapital: "Capital reserve",
+    pipeline: "Pipeline", readyAssets: "Actifs prets pour les tests", legalTitle: "Cadre juridique des tokens en Republique dominicaine",
+    legalLead: "La Republique dominicaine ne dispose pas encore d'une loi crypto complete specifique a la tokenisation immobiliere. La voie prudente consiste a structurer les offres pouvant etre qualifiees de valeurs mobilieres sous la Loi 249-17 et la supervision de la SIMV, avec KYC/AML, documents d'information et protection des investisseurs. Les cryptoactifs ne sont pas une monnaie ayant cours legal et ne sont pas garantis par la Banque centrale.",
+    legal1: "Un token immobilier ne doit pas etre presente comme un titre de propriete enregistre. Il represente generalement un droit economique, contractuel ou lie a un vehicule juridique.",
+    legal2: "Si le token fonctionne comme une valeur mobiliere, il doit etre examine par des conseillers juridiques et, le cas echeant, par le regulateur des valeurs mobilieres.",
+    legal3: "La plateforme doit separer clairement le registre legal, les contrats, le cap table interne et l'enregistrement blockchain.",
+    loginTitle: "Panneau admin", loginLead: "Connectez-vous pour gerer les projets, KYC et journaux d'audit.", privateAccess: "Acces prive", username: "Utilisateur", password: "Mot de passe", enter: "Connexion", logout: "Deconnexion"
+  }
+};
+
+function getLang(req) {
+  const queryLang = req.query.lang;
+  if (queryLang && i18n[queryLang]) return queryLang;
+  const cookieLang = parseCookies(req).tokenizas_lang;
+  return i18n[cookieLang] ? cookieLang : "es";
+}
+
+function tr(req) {
+  return i18n[getLang(req)];
+}
+
+function langSwitcher(req) {
+  const current = getLang(req);
+  return `<div class="langSwitch">${["es", "en", "de", "fr"].map((lang) => `<a class="${current === lang ? "active" : ""}" href="?lang=${lang}">${lang.toUpperCase()}</a>`).join("")}</div>`;
+}
+
+function layout(title, body, req) {
+  const t = req ? tr(req) : i18n.es;
   return `<!doctype html>
-  <html lang="es">
+  <html lang="${req ? getLang(req) : "es"}">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -49,12 +127,14 @@ function layout(title, body) {
     </head>
     <body>
       <header class="topbar">
-        <a class="brand" href="/">Tokenizas<span>Dominicana</span></a>
+        <a class="brand" href="/"><img src="/logo.svg" alt="Tokenizas Dominicana" /></a>
         <nav>
-          <a href="/projects">Proyectos</a>
-          <a href="/invest">Invertir</a>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/projects">${t.projects}</a>
+          <a href="/invest">${t.invest}</a>
+          <a href="/dashboard">${t.dashboard}</a>
+          <a href="/legal">${t.legal}</a>
         </nav>
+        ${req ? langSwitcher(req) : ""}
       </header>
       ${body}
     </body>
@@ -110,27 +190,29 @@ function requireAdmin(req, res, next) {
   res.redirect("/login");
 }
 
-function loginPage(error = "") {
+function loginPage(req, error = "") {
+  const t = tr(req);
   return layout("Login", `
     <main class="authPage">
       <form class="panel loginPanel" method="post" action="/login">
-        <p class="eyebrow">Acceso privado</p>
-        <h1>Panel administrativo</h1>
-        <p class="muted">Ingresa tus credenciales para administrar proyectos, KYC y auditoria.</p>
+        <p class="eyebrow">${t.privateAccess}</p>
+        <h1>${t.loginTitle}</h1>
+        <p class="muted">${t.loginLead}</p>
         ${error ? `<div class="alert">${error}</div>` : ""}
-        <label>Usuario
+        <label>${t.username}
           <input name="username" autocomplete="username" required />
         </label>
-        <label>Clave
+        <label>${t.password}
           <input name="password" type="password" autocomplete="current-password" required />
         </label>
-        <button class="button primary" type="submit">Entrar</button>
+        <button class="button primary" type="submit">${t.enter}</button>
       </form>
     </main>
-  `);
+  `, req);
 }
 
 app.get("/", (req, res) => {
+  const t = tr(req);
   const stats = store.get(`
     SELECT
       COUNT(*) projects,
@@ -145,39 +227,39 @@ app.get("/", (req, res) => {
       <section class="hero">
         <div class="heroOverlay"></div>
         <div class="heroContent">
-          <p class="eyebrow">Real estate tokenization en Solana</p>
-          <h1>Invierte de forma fraccionada en proyectos inmobiliarios dominicanos.</h1>
-          <p class="lead">Plataforma demo para originar activos, validar inversionistas, estructurar ofertas, emitir tokens controlados y administrar distribuciones.</p>
+          <p class="eyebrow">${t.heroEyebrow}</p>
+          <h1>${t.heroTitle}</h1>
+          <p class="lead">${t.heroLead}</p>
           <div class="actions">
-            <a class="button primary" href="/projects">Ver proyectos</a>
-            <a class="button ghost" href="/invest">Crear orden</a>
+            <a class="button primary" href="/projects">${t.viewProjects}</a>
+            <a class="button ghost" href="/invest">${t.createOrder}</a>
           </div>
         </div>
       </section>
       <section class="metrics">
-        <article><strong>${stats.projects}</strong><span>Proyectos piloto</span></article>
-        <article><strong>${money.format(stats.target)}</strong><span>Capital objetivo</span></article>
-        <article><strong>${money.format(stats.raised)}</strong><span>Capital reservado</span></article>
+        <article><strong>${stats.projects}</strong><span>${t.pilotProjects}</span></article>
+        <article><strong>${money.format(stats.target)}</strong><span>${t.targetCapital}</span></article>
+        <article><strong>${money.format(stats.raised)}</strong><span>${t.reservedCapital}</span></article>
       </section>
       <section class="section">
         <div class="sectionHead">
-          <p class="eyebrow">Pipeline</p>
-          <h2>Activos listos para pruebas</h2>
+          <p class="eyebrow">${t.pipeline}</p>
+          <h2>${t.readyAssets}</h2>
         </div>
         <div class="grid cards">${projects.map(projectCard).join("")}</div>
       </section>
     </main>
-  `));
+  `, req));
 });
 
 app.get("/login", (req, res) => {
   if (isAdmin(req)) return res.redirect("/admin");
-  res.send(loginPage());
+  res.send(loginPage(req));
 });
 
 app.post("/login", (req, res) => {
   if (req.body.username !== adminUser || req.body.password !== adminPassword) {
-    return res.status(401).send(loginPage("Usuario o clave incorrectos."));
+    return res.status(401).send(loginPage(req, "Usuario o clave incorrectos."));
   }
 
   res.setHeader("Set-Cookie", [
@@ -191,6 +273,42 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+app.get("/legal", (req, res) => {
+  const t = tr(req);
+  res.send(layout(t.legalTitle, `
+    <main>
+      <section class="legalHero">
+        <div class="sectionHead">
+          <p class="eyebrow">${t.legal}</p>
+          <h1>${t.legalTitle}</h1>
+          <p class="lead">${t.legalLead}</p>
+        </div>
+      </section>
+      <section class="legalGrid">
+        <article class="panel lawCard">
+          <strong>01</strong>
+          <h3>Token != titulo</h3>
+          <p>${t.legal1}</p>
+        </article>
+        <article class="panel lawCard">
+          <strong>02</strong>
+          <h3>Valores / securities</h3>
+          <p>${t.legal2}</p>
+        </article>
+        <article class="panel lawCard">
+          <strong>03</strong>
+          <h3>Registro separado</h3>
+          <p>${t.legal3}</p>
+        </article>
+      </section>
+      <section class="panel legalNote">
+        <h2>Fuentes regulatorias de referencia</h2>
+        <p>Para produccion real se debe validar con abogados dominicanos, la Superintendencia del Mercado de Valores, la Direccion General de Impuestos Internos, la Unidad de Analisis Financiero y politicas del Banco Central sobre activos virtuales.</p>
+      </section>
+    </main>
+  `, req));
+});
+
 app.get("/projects", (req, res) => {
   const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC");
   res.send(layout("Proyectos", `
@@ -201,7 +319,7 @@ app.get("/projects", (req, res) => {
       </div>
       <div class="grid cards">${projects.map(projectCard).join("")}</div>
     </main>
-  `));
+  `, req));
 });
 
 app.get("/projects/:slug", (req, res) => {
@@ -265,7 +383,7 @@ app.get("/projects/:slug", (req, res) => {
         </div>
       </section>
     </main>
-  `));
+  `, req));
 });
 
 app.get("/invest", (req, res) => {
@@ -323,7 +441,7 @@ app.get("/invest", (req, res) => {
         </div>
       </section>
     </main>
-  `));
+  `, req));
 });
 
 app.post("/invest", (req, res) => {
@@ -377,10 +495,11 @@ app.get("/dashboard", (req, res) => {
         </article>
       `).join("")}</div>
     </main>
-  `));
+  `, req));
 });
 
 app.get("/admin", requireAdmin, (req, res) => {
+  const t = tr(req);
   const projects = store.all(`
     SELECT p.*, o.raised FROM projects p LEFT JOIN offerings o ON o.project_id = p.id ORDER BY p.id
   `);
@@ -391,7 +510,7 @@ app.get("/admin", requireAdmin, (req, res) => {
       <div class="sectionHead">
         <p class="eyebrow">Back office</p>
         <h1>Control operativo</h1>
-        <p><a class="button small" href="/logout">Cerrar sesion</a></p>
+        <p><a class="button small" href="/logout">${t.logout}</a></p>
       </div>
       <section class="split">
         <div class="panel">
@@ -408,7 +527,7 @@ app.get("/admin", requireAdmin, (req, res) => {
         ${logs.map((log) => `<div class="event"><b>${log.action}</b><span>${log.actor} · ${log.entity}</span><p>${log.details}</p></div>`).join("")}
       </section>
     </main>
-  `));
+  `, req));
 });
 
 function fact(label, value) {

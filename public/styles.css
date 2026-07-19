@@ -162,6 +162,38 @@ input, select {
   color: var(--ink);
   font: inherit;
 }
+.investPage {
+  display: grid;
+  grid-template-columns: minmax(320px, .72fr) minmax(0, 1.28fr);
+  gap: 26px;
+  align-items: start;
+}
+.investPanel {
+  display: grid;
+  gap: 18px;
+  position: sticky;
+  top: 96px;
+}
+.miniProject {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.miniProject:first-of-type { padding-top: 0; }
+.miniProject:last-child { border-bottom: 0; padding-bottom: 0; }
+.miniProject img {
+  width: 180px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.miniProject h3 { margin-bottom: 6px; }
+.miniProject a {
+  color: var(--brand-dark);
+  font-weight: 850;
+}
 .event { padding: 13px 0; border-bottom: 1px solid var(--line); }
 .event b, .event span { display: block; }
 .event span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
@@ -187,9 +219,11 @@ input, select {
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
   .metrics article { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px; }
+  .investPanel { position: static; }
+  .miniProject img { width: 100%; height: 190px; }
   .holding { grid-template-columns: 72px 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
 }

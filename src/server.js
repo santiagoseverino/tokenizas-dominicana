@@ -9,6 +9,7 @@ const registerAuthRoutes = require("./routes/auth");
 const registerContactRoutes = require("./routes/contact");
 const registerDashboardRoutes = require("./routes/dashboard");
 const registerHomeRoutes = require("./routes/home");
+const registerHermesRoutes = require("./routes/hermes");
 const registerInvestRoutes = require("./routes/invest");
 const registerLegalRoutes = require("./routes/legal");
 const registerProjectRoutes = require("./routes/projects");
@@ -26,6 +27,7 @@ app.get("/health", (req, res) => {
 
 registerHomeRoutes(app);
 registerAuthRoutes(app);
+registerHermesRoutes(app);
 registerLegalRoutes(app);
 registerContactRoutes(app);
 registerProjectRoutes(app);

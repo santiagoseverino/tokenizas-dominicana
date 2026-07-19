@@ -1,0 +1,19 @@
+{
+  "name": "tokenizas-dominicana",
+  "version": "0.1.0",
+  "description": "Plataforma demo de tokenizacion inmobiliaria en Solana para Republica Dominicana.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "seed": "node src/seed.js",
+    "dev": "node src/server.js",
+    "health": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>r.json()).then(console.log)\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sql.js": "^1.12.0"
+  }
+}

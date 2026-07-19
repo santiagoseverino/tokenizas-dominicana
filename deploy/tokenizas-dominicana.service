@@ -1,0 +1,17 @@
+[Unit]
+Description=Tokenizas Dominicana Node.js app
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/tokenizas-dominicana
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

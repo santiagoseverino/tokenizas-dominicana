@@ -283,20 +283,25 @@ textarea {
   background: linear-gradient(180deg, #ffffff, #e9fbf7);
 }
 .offerSlider {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 1fr);
-  gap: 14px;
-  overflow-x: auto;
+  overflow: hidden;
   padding: 4px 0 22px;
-  scroll-snap-type: x mandatory;
+}
+.offerTrack {
+  width: max-content;
+  display: flex;
+  gap: 14px;
+  animation: offerSlide 34s linear infinite;
+}
+.offerSlider:hover .offerTrack {
+  animation-play-state: paused;
 }
 .offerSlide {
+  width: min(31vw, 330px);
   min-height: 190px;
   position: relative;
+  flex: 0 0 auto;
   overflow: hidden;
   border-radius: 8px;
-  scroll-snap-align: start;
   background: var(--blue);
 }
 .offerSlide img {
@@ -318,6 +323,10 @@ textarea {
   z-index: 1;
   color: white;
   font-size: 18px;
+}
+@keyframes offerSlide {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 7px)); }
 }
 .featureGrid {
   display: grid;
@@ -505,6 +514,8 @@ textarea {
   nav { width: 100%; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .brand img { width: 210px; max-width: 82vw; }
   .dropMenu { left: 0; }
+  .offerSlide { width: 76vw; }
+  .offerTrack { animation-duration: 42s; }
   .langSwitch { align-self: stretch; justify-content: space-between; }
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }

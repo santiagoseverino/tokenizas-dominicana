@@ -47,13 +47,20 @@ function registerHomeRoutes(app) {
             <p class="muted">${t.modulesLead}</p>
           </div>
           <div class="offerSlider" aria-label="Categorias tokenizables">
+            <div class="offerTrack">
             ${[
+              ["Bienes raices", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=720&q=68"],
+              ["Agricultura", "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=720&q=68"],
+              ["Arte", "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=720&q=68"],
+              ["Musica", "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=720&q=68"],
+              ["Turismo", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=68"],
               ["Bienes raices", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=720&q=68"],
               ["Agricultura", "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=720&q=68"],
               ["Arte", "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=720&q=68"],
               ["Musica", "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=720&q=68"],
               ["Turismo", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=68"]
             ].map((item) => `<article class="offerSlide"><img src="${item[1]}" alt="${item[0]}" loading="lazy" decoding="async" width="720" height="420" /><strong>${item[0]}</strong></article>`).join("")}
+            </div>
           </div>
           <div class="grid featureGrid">
             ${featureCard(t.backOffice, t.backOfficeText, "01")}

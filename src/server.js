@@ -1,9 +1,30 @@
 const express = require("express");
+const crypto = require("crypto");
+const fs = require("fs");
 const path = require("path");
 const store = require("./db");
 
+function loadEnvFile() {
+  const envPath = path.join(__dirname, "..", ".env");
+  if (!fs.existsSync(envPath)) return;
+  fs.readFileSync(envPath, "utf8").split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+    const index = trimmed.indexOf("=");
+    if (index === -1) return;
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim();
+    if (!process.env[key]) process.env[key] = value;
+  });
+}
+
+loadEnvFile();
+
 const app = express();
 const port = process.env.PORT || 3000;
+const adminUser = process.env.ADMIN_USER || "admin";
+const adminPassword = process.env.ADMIN_PASSWORD || "TokenizasAdmin2026!";
+const sessionSecret = process.env.SESSION_SECRET || "change-this-tokenizas-secret";
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -33,7 +54,6 @@ function layout(title, body) {
           <a href="/projects">Proyectos</a>
           <a href="/invest">Invertir</a>
           <a href="/dashboard">Dashboard</a>
-          <a href="/admin">Admin</a>
         </nav>
       </header>
       ${body}
@@ -50,6 +70,64 @@ function statusLabel(status) {
     compliance_review: "Revision compliance"
   };
   return labels[status] || status;
+}
+
+function parseCookies(req) {
+  return (req.headers.cookie || "").split(";").reduce((cookies, item) => {
+    const index = item.indexOf("=");
+    if (index === -1) return cookies;
+    cookies[item.slice(0, index).trim()] = decodeURIComponent(item.slice(index + 1).trim());
+    return cookies;
+  }, {});
+}
+
+function signSession(value) {
+  return crypto.createHmac("sha256", sessionSecret).update(value).digest("hex");
+}
+
+function sessionCookieValue() {
+  const payload = `${adminUser}:${Date.now()}`;
+  return `${payload}.${signSession(payload)}`;
+}
+
+function isAdmin(req) {
+  const token = parseCookies(req).tokenizas_admin;
+  if (!token) return false;
+  const separator = token.lastIndexOf(".");
+  if (separator === -1) return false;
+  const payload = token.slice(0, separator);
+  const signature = token.slice(separator + 1);
+  const expectedSignature = signSession(payload);
+  if (signature.length !== expectedSignature.length) return false;
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) return false;
+  const [user, issuedAt] = payload.split(":");
+  const ageMs = Date.now() - Number(issuedAt);
+  return user === adminUser && ageMs > 0 && ageMs < 1000 * 60 * 60 * 12;
+}
+
+function requireAdmin(req, res, next) {
+  if (isAdmin(req)) return next();
+  res.redirect("/login");
+}
+
+function loginPage(error = "") {
+  return layout("Login", `
+    <main class="authPage">
+      <form class="panel loginPanel" method="post" action="/login">
+        <p class="eyebrow">Acceso privado</p>
+        <h1>Panel administrativo</h1>
+        <p class="muted">Ingresa tus credenciales para administrar proyectos, KYC y auditoria.</p>
+        ${error ? `<div class="alert">${error}</div>` : ""}
+        <label>Usuario
+          <input name="username" autocomplete="username" required />
+        </label>
+        <label>Clave
+          <input name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button class="button primary" type="submit">Entrar</button>
+      </form>
+    </main>
+  `);
 }
 
 app.get("/", (req, res) => {
@@ -72,7 +150,7 @@ app.get("/", (req, res) => {
           <p class="lead">Plataforma demo para originar activos, validar inversionistas, estructurar ofertas, emitir tokens controlados y administrar distribuciones.</p>
           <div class="actions">
             <a class="button primary" href="/projects">Ver proyectos</a>
-            <a class="button ghost" href="/admin">Panel admin</a>
+            <a class="button ghost" href="/invest">Crear orden</a>
           </div>
         </div>
       </section>
@@ -90,6 +168,27 @@ app.get("/", (req, res) => {
       </section>
     </main>
   `));
+});
+
+app.get("/login", (req, res) => {
+  if (isAdmin(req)) return res.redirect("/admin");
+  res.send(loginPage());
+});
+
+app.post("/login", (req, res) => {
+  if (req.body.username !== adminUser || req.body.password !== adminPassword) {
+    return res.status(401).send(loginPage("Usuario o clave incorrectos."));
+  }
+
+  res.setHeader("Set-Cookie", [
+    `tokenizas_admin=${encodeURIComponent(sessionCookieValue())}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200`
+  ]);
+  res.redirect("/admin");
+});
+
+app.get("/logout", (req, res) => {
+  res.setHeader("Set-Cookie", "tokenizas_admin=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+  res.redirect("/login");
 });
 
 app.get("/projects", (req, res) => {
@@ -281,7 +380,7 @@ app.get("/dashboard", (req, res) => {
   `));
 });
 
-app.get("/admin", (req, res) => {
+app.get("/admin", requireAdmin, (req, res) => {
   const projects = store.all(`
     SELECT p.*, o.raised FROM projects p LEFT JOIN offerings o ON o.project_id = p.id ORDER BY p.id
   `);
@@ -292,6 +391,7 @@ app.get("/admin", (req, res) => {
       <div class="sectionHead">
         <p class="eyebrow">Back office</p>
         <h1>Control operativo</h1>
+        <p><a class="button small" href="/logout">Cerrar sesion</a></p>
       </div>
       <section class="split">
         <div class="panel">

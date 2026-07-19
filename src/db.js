@@ -128,6 +128,12 @@ function migrate() {
       internal_notes TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);
@@ -138,6 +144,19 @@ function migrate() {
     db.run("ALTER TABLE leads ADD COLUMN internal_notes TEXT");
   }
   saveDb();
+}
+
+function getSetting(key, fallback = "") {
+  const row = get("SELECT value FROM settings WHERE key = ?", [key]);
+  return row ? row.value : fallback;
+}
+
+function setSetting(key, value) {
+  run(`
+    INSERT INTO settings (key, value, updated_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+  `, [key, value, new Date().toISOString()]);
 }
 
 function all(sql, params = []) {
@@ -165,4 +184,4 @@ function exec(sql) {
   saveDb();
 }
 
-module.exports = { initDb, all, get, run, exec, saveDb };
+module.exports = { initDb, all, get, getSetting, run, setSetting, exec, saveDb };

@@ -1,4 +1,4 @@
-const { adminPassword, adminUser, isAdmin, sessionCookieValue } = require("../middleware/auth");
+const { getAdminCredentials, isAdmin, sessionCookieValue } = require("../middleware/auth");
 const { tr } = require("../lib/i18n");
 const { layout } = require("../lib/ui");
 
@@ -26,7 +26,8 @@ function registerAuthRoutes(app) {
   });
 
   app.post("/login", (req, res) => {
-    if (req.body.username !== adminUser || req.body.password !== adminPassword) {
+    const credentials = getAdminCredentials();
+    if (req.body.username !== credentials.user || req.body.password !== credentials.password) {
       return res.status(401).send(loginPage(req, "Usuario o clave incorrectos."));
     }
     res.setHeader("Set-Cookie", `tokenizas_admin=${encodeURIComponent(sessionCookieValue())}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200`);

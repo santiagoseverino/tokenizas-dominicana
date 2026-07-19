@@ -13,7 +13,7 @@ function registerAdminRoutes(app) {
     const leads = store.all("SELECT * FROM leads ORDER BY id DESC LIMIT 8");
     res.send(layout("Admin", `
       <main class="page">
-        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/logout">${t.logout}</a></p></div>
+        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
         <section class="split">
           <div class="panel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span>${project.title}</span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
           <div class="panel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>
@@ -24,6 +24,52 @@ function registerAdminRoutes(app) {
         </section>
       </main>
     `, req));
+  });
+
+  app.get("/admin/settings", requireAdmin, (req, res) => {
+    const adminUser = store.getSetting("admin_user", process.env.ADMIN_USER || "admin");
+    const saved = req.query.saved === "1";
+    res.send(layout("Configuracion", `
+      <main class="page">
+        <div class="sectionHead">
+          <p class="eyebrow">Admin</p>
+          <h1>Configuracion</h1>
+          <p><a class="button small" href="/admin">Volver</a></p>
+        </div>
+        <form class="panel contactForm" method="post" action="/admin/settings">
+          ${saved ? `<div class="success">Configuracion guardada. Vuelve a iniciar sesion con las nuevas credenciales.</div>` : ""}
+          <label>Usuario admin
+            <input name="admin_user" value="${adminUser}" required />
+          </label>
+          <label>Nueva clave
+            <input name="admin_password" type="password" minlength="8" required />
+          </label>
+          <label>Confirmar nueva clave
+            <input name="admin_password_confirm" type="password" minlength="8" required />
+          </label>
+          <button class="button primary" type="submit">Guardar credenciales</button>
+        </form>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/settings", requireAdmin, (req, res) => {
+    const adminUser = String(req.body.admin_user || "").trim();
+    const password = String(req.body.admin_password || "");
+    const confirm = String(req.body.admin_password_confirm || "");
+    if (!adminUser || password.length < 8 || password !== confirm) {
+      return res.status(400).send(layout("Configuracion", `
+        <main class="page">
+          <div class="sectionHead"><p class="eyebrow">Admin</p><h1>Configuracion</h1><p><a class="button small" href="/admin/settings">Volver</a></p></div>
+          <div class="panel"><div class="alert">La clave debe tener 8 caracteres o mas y coincidir con la confirmacion.</div></div>
+        </main>
+      `, req));
+    }
+    store.setSetting("admin_user", adminUser);
+    store.setSetting("admin_password", password);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_admin_credentials", "settings", adminUser, new Date().toISOString()]);
+    res.setHeader("Set-Cookie", "tokenizas_admin=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+    res.redirect("/login");
   });
 
   app.get("/admin/leads", requireAdmin, (req, res) => {

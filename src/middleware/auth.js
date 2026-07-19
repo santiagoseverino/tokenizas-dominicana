@@ -1,12 +1,20 @@
 const crypto = require("crypto");
+const store = require("../db");
 const { adminPassword, adminUser, sessionSecret } = require("../config");
+
+function getAdminCredentials() {
+  return {
+    user: store.getSetting("admin_user", adminUser),
+    password: store.getSetting("admin_password", adminPassword)
+  };
+}
 
 function signSession(value) {
   return crypto.createHmac("sha256", sessionSecret).update(value).digest("hex");
 }
 
 function sessionCookieValue() {
-  const payload = `${adminUser}:${Date.now()}`;
+  const payload = `${getAdminCredentials().user}:${Date.now()}`;
   return `${payload}.${signSession(payload)}`;
 }
 
@@ -22,7 +30,7 @@ function isAdmin(req) {
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) return false;
   const [user, issuedAt] = payload.split(":");
   const ageMs = Date.now() - Number(issuedAt);
-  return user === adminUser && ageMs > 0 && ageMs < 1000 * 60 * 60 * 12;
+  return user === getAdminCredentials().user && ageMs > 0 && ageMs < 1000 * 60 * 60 * 12;
 }
 
 function requireAdmin(req, res, next) {
@@ -30,4 +38,4 @@ function requireAdmin(req, res, next) {
   res.redirect("/login");
 }
 
-module.exports = { adminPassword, adminUser, isAdmin, requireAdmin, sessionCookieValue };
+module.exports = { getAdminCredentials, isAdmin, requireAdmin, sessionCookieValue };

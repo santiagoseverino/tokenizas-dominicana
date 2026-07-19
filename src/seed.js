@@ -20,8 +20,8 @@ const { ensureProjectMint, ensureWalletForUser, issueTokensForInvestment } = req
   `);
 
   [
-    ["Maria Rodriguez", "maria@demo.do", "investor", "Dominican Republic", "approved", "9xRDemoWalletMariaSolana", now],
-    ["James Carter", "james@demo.com", "investor", "United States", "restricted_review", "7kFDemoWalletJamesSolana", now],
+    ["Maria Rodriguez", "maria@demo.do", "investor", "Dominican Republic", "approved", null, now],
+    ["James Carter", "james@demo.com", "investor", "United States", "restricted_review", null, now],
     ["Inversiones Caribe SRL", "issuer@demo.do", "issuer", "Dominican Republic", "business_approved", null, now],
     ["Ana Compliance", "compliance@tokenizas.do", "admin", "Dominican Republic", "approved", null, now]
   ].forEach((user) => {
@@ -77,9 +77,15 @@ const { ensureProjectMint, ensureWalletForUser, issueTokensForInvestment } = req
   run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [maria.id, samana.id, 12000, 1200, "Transferencia bancaria", "pending_payment", now]);
   run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [james.id, puntaCana.id, 15000, 1500, "USDC Solana", "compliance_review", now]);
 
-  all("SELECT * FROM projects").forEach((project) => ensureProjectMint(project));
-  all("SELECT * FROM users WHERE role = 'investor'").forEach((user) => ensureWalletForUser(user));
-  all("SELECT id FROM investments WHERE user_id = ?", [maria.id]).forEach((investment) => issueTokensForInvestment(investment.id));
+  for (const project of all("SELECT * FROM projects")) {
+    await ensureProjectMint(project);
+  }
+  for (const user of all("SELECT * FROM users WHERE role = 'investor'")) {
+    await ensureWalletForUser(user);
+  }
+  for (const investment of all("SELECT id FROM investments WHERE user_id = ?", [maria.id])) {
+    await issueTokensForInvestment(investment.id);
+  }
 
   [
     ["Ana Compliance", "approved_kyc", "Maria Rodriguez", "KYC aprobado para inversion local.", now],

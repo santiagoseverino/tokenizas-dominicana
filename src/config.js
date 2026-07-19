@@ -22,5 +22,9 @@ module.exports = {
   adminUser: process.env.ADMIN_USER || "admin",
   adminPassword: process.env.ADMIN_PASSWORD || "TokenizasAdmin2026!",
   sessionSecret: process.env.SESSION_SECRET || "change-this-tokenizas-secret",
-  whatsappNumber: process.env.WHATSAPP_NUMBER || "18090000000"
+  whatsappNumber: process.env.WHATSAPP_NUMBER || "18090000000",
+  solanaCluster: process.env.SOLANA_CLUSTER || "testnet",
+  solanaRpcUrl: process.env.SOLANA_RPC_URL || "https://api.testnet.solana.com",
+  solanaPayerSecretKey: process.env.SOLANA_PAYER_SECRET_KEY || "",
+  solanaTokenDecimals: Number(process.env.SOLANA_TOKEN_DECIMALS || 0)
 };

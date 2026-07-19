@@ -1,5 +1,7 @@
 const crypto = require("crypto");
 const store = require("../db");
+const config = require("../config");
+const { createDemoWalletAddress, createMintOnTestnet, isRealSolanaEnabled, mintTokensOnTestnet } = require("./solana");
 
 function fakeSolanaAddress(prefix) {
   return `${prefix}${crypto.randomBytes(24).toString("hex")}`.slice(0, 44);
@@ -9,26 +11,28 @@ function fakeSignature() {
   return crypto.randomBytes(44).toString("base64url").slice(0, 88);
 }
 
-function ensureProjectMint(project) {
+async function ensureProjectMint(project) {
   const existing = store.get("SELECT * FROM token_mints WHERE project_id = ?", [project.id]);
   if (existing) return existing;
 
   const now = new Date().toISOString();
+  const realMode = isRealSolanaEnabled();
+  const chainMint = realMode ? await createMintOnTestnet() : null;
   store.run(`
     INSERT INTO token_mints
     (project_id, network, mint_address, treasury_wallet, authority_wallet, multisig_wallet, token_standard, decimals, transfer_rules, status, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     project.id,
-    "solana-devnet",
-    fakeSolanaAddress("Mint"),
-    fakeSolanaAddress("Treasury"),
-    fakeSolanaAddress("Authority"),
-    fakeSolanaAddress("Squads"),
-    "Token Extensions",
-    0,
+    realMode ? `solana-${config.solanaCluster}` : "solana-testnet-demo",
+    chainMint ? chainMint.mintAddress : fakeSolanaAddress("Mint"),
+    chainMint ? chainMint.treasuryWallet : fakeSolanaAddress("Treasury"),
+    chainMint ? chainMint.authorityWallet : fakeSolanaAddress("Authority"),
+    chainMint ? chainMint.authorityWallet : fakeSolanaAddress("Squads"),
+    realMode ? "SPL Token" : "Token Extensions demo",
+    config.solanaTokenDecimals,
     "KYC whitelist, transfer hook, lockup, admin freeze authority",
-    "configured",
+    realMode ? "onchain_testnet" : "configured_demo",
     now
   ]);
 
@@ -36,7 +40,7 @@ function ensureProjectMint(project) {
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     project.id,
     "mint_configured",
-    fakeSignature(),
+    realMode ? "created-by-solana-testnet" : fakeSignature(),
     mint.multisig_wallet,
     `Mint ${project.token_symbol} configurado en ${mint.network}.`,
     now
@@ -44,16 +48,16 @@ function ensureProjectMint(project) {
   return mint;
 }
 
-function ensureWalletForUser(user) {
+async function ensureWalletForUser(user) {
   const existing = store.get("SELECT * FROM wallets WHERE owner_type = 'user' AND owner_id = ?", [user.id]);
   if (existing) return existing;
-  const address = user.wallet || fakeSolanaAddress("User");
+  const address = user.wallet || createDemoWalletAddress() || fakeSolanaAddress("User");
   store.run("INSERT INTO wallets (owner_type, owner_id, label, address, network, wallet_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
     "user",
     user.id,
     `${user.name} Solana wallet`,
     address,
-    "solana-devnet",
+    isRealSolanaEnabled() ? `solana-${config.solanaCluster}` : "solana-testnet-demo",
     "external",
     user.kyc_status === "approved" ? "whitelisted" : "review",
     new Date().toISOString()
@@ -61,7 +65,7 @@ function ensureWalletForUser(user) {
   return store.get("SELECT * FROM wallets WHERE owner_type = 'user' AND owner_id = ?", [user.id]);
 }
 
-function issueTokensForInvestment(investmentId) {
+async function issueTokensForInvestment(investmentId) {
   const investment = store.get(`
     SELECT i.*, u.name, u.email, u.kyc_status, u.wallet, p.token_symbol, p.title, p.id project_id
     FROM investments i
@@ -74,14 +78,17 @@ function issueTokensForInvestment(investmentId) {
   if (investment.status === "tokens_issued") throw new Error("Tokens were already issued for this order");
 
   const project = store.get("SELECT * FROM projects WHERE id = ?", [investment.project_id]);
-  const mint = ensureProjectMint(project);
-  const wallet = ensureWalletForUser({
+  const mint = await ensureProjectMint(project);
+  const wallet = await ensureWalletForUser({
     id: investment.user_id,
     name: investment.name,
     wallet: investment.wallet,
     kyc_status: investment.kyc_status
   });
   const now = new Date().toISOString();
+  const chainIssue = isRealSolanaEnabled()
+    ? await mintTokensOnTestnet({ mintAddress: mint.mint_address, recipientAddress: wallet.address, amount: investment.tokens })
+    : null;
   const current = store.get("SELECT * FROM token_balances WHERE project_id = ? AND user_id = ?", [investment.project_id, investment.user_id]);
   if (current) {
     store.run("UPDATE token_balances SET balance = balance + ?, locked_balance = locked_balance + ?, updated_at = ? WHERE id = ?", [investment.tokens, investment.tokens, now, current.id]);
@@ -100,9 +107,9 @@ function issueTokensForInvestment(investmentId) {
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     investment.project_id,
     "tokens_issued",
-    fakeSignature(),
+    chainIssue ? chainIssue.signature : fakeSignature(),
     mint.multisig_wallet,
-    `${investment.tokens} ${investment.token_symbol} emitidos a ${wallet.address}.`,
+    `${investment.tokens} ${investment.token_symbol} emitidos a ${wallet.address}${chainIssue ? ` en token account ${chainIssue.tokenAccount}` : ""}.`,
     now
   ]);
   return { investment, mint, wallet };

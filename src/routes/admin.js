@@ -136,16 +136,20 @@ function registerAdminRoutes(app) {
     `, req));
   });
 
-  app.post("/admin/tokenization/projects/:id/mint", requireAdmin, (req, res) => {
+  app.post("/admin/tokenization/projects/:id/mint", requireAdmin, async (req, res) => {
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
     if (!project) return res.status(404).send("Proyecto no encontrado");
-    ensureProjectMint(project);
-    res.redirect("/admin/tokenization");
+    try {
+      await ensureProjectMint(project);
+      res.redirect("/admin/tokenization");
+    } catch (error) {
+      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
+    }
   });
 
-  app.post("/admin/tokenization/investments/:id/issue", requireAdmin, (req, res) => {
+  app.post("/admin/tokenization/investments/:id/issue", requireAdmin, async (req, res) => {
     try {
-      issueTokensForInvestment(req.params.id);
+      await issueTokensForInvestment(req.params.id);
       res.redirect("/admin/tokenization");
     } catch (error) {
       res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));

@@ -34,7 +34,7 @@ function contactPage(req, error = "", success = "") {
 function registerContactRoutes(app) {
   app.get("/contact", (req, res) => res.send(contactPage(req)));
 
-  app.post("/contact", (req, res) => {
+  app.post("/contact", async (req, res) => {
     const t = tr(req);
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim();
@@ -61,8 +61,26 @@ function registerContactRoutes(app) {
       "new",
       new Date().toISOString()
     ]);
-    notifyLead(lead);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [name, "created_lead", "contact", `${interest} - ${email}`, new Date().toISOString()]);
+    try {
+      const result = await notifyLead(lead);
+      store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [
+        "System",
+        result.sent ? "sent_lead_email" : "skipped_lead_email",
+        email,
+        result.sent ? result.messageId : result.reason,
+        new Date().toISOString()
+      ]);
+    } catch (error) {
+      store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [
+        "System",
+        "failed_lead_email",
+        email,
+        error.message,
+        new Date().toISOString()
+      ]);
+      console.error("Lead email failed:", error.message);
+    }
     res.send(contactPage(req, "", t.leadSaved));
   });
 }

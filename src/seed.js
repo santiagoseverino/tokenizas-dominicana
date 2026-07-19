@@ -1,4 +1,5 @@
 const { initDb, all, run, exec } = require("./db");
+const { ensureProjectMint, ensureWalletForUser, issueTokensForInvestment } = require("./lib/tokenization");
 
 (async () => {
   await initDb();
@@ -7,6 +8,9 @@ const { initDb, all, run, exec } = require("./db");
   exec(`
     DELETE FROM audit_logs;
     DELETE FROM distributions;
+    DELETE FROM token_balances;
+    DELETE FROM wallets;
+    DELETE FROM token_mints;
     DELETE FROM token_events;
     DELETE FROM investments;
     DELETE FROM offerings;
@@ -55,14 +59,6 @@ const { initDb, all, run, exec } = require("./db");
       "2026-10-30",
       index === 1 ? 18 : 12
     ]);
-    run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
-      project.id,
-      "mint_configured",
-      `5DemoSolanaSignature${project.id}Mint`,
-      "Squads multisig",
-      "Mint creado con whitelist y autoridad multisig simulada.",
-      now
-    ]);
     run("INSERT INTO distributions (project_id, period, amount, status, paid_at) VALUES (?, ?, ?, ?, ?)", [
       project.id,
       "2026-Q2",
@@ -72,9 +68,18 @@ const { initDb, all, run, exec } = require("./db");
     ]);
   });
 
-  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [1, 1, 25000, 2500, "USDC Solana", "tokens_issued", now]);
-  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [1, 3, 12000, 1200, "Transferencia bancaria", "tokens_issued", now]);
-  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [2, 1, 15000, 1500, "USDC Solana", "compliance_review", now]);
+  const maria = all("SELECT id FROM users WHERE email = ?", ["maria@demo.do"])[0];
+  const james = all("SELECT id FROM users WHERE email = ?", ["james@demo.com"])[0];
+  const puntaCana = all("SELECT id FROM projects WHERE slug = ?", ["punta-cana-villas"])[0];
+  const samana = all("SELECT id FROM projects WHERE slug = ?", ["samana-eco-hotel"])[0];
+
+  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [maria.id, puntaCana.id, 25000, 2500, "USDC Solana", "pending_payment", now]);
+  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [maria.id, samana.id, 12000, 1200, "Transferencia bancaria", "pending_payment", now]);
+  run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [james.id, puntaCana.id, 15000, 1500, "USDC Solana", "compliance_review", now]);
+
+  all("SELECT * FROM projects").forEach((project) => ensureProjectMint(project));
+  all("SELECT * FROM users WHERE role = 'investor'").forEach((user) => ensureWalletForUser(user));
+  all("SELECT id FROM investments WHERE user_id = ?", [maria.id]).forEach((investment) => issueTokensForInvestment(investment.id));
 
   [
     ["Ana Compliance", "approved_kyc", "Maria Rodriguez", "KYC aprobado para inversion local.", now],

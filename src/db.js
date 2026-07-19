@@ -97,6 +97,45 @@ function migrate() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS token_mints (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL UNIQUE,
+      network TEXT NOT NULL,
+      mint_address TEXT NOT NULL,
+      treasury_wallet TEXT NOT NULL,
+      authority_wallet TEXT NOT NULL,
+      multisig_wallet TEXT NOT NULL,
+      token_standard TEXT NOT NULL,
+      decimals INTEGER NOT NULL,
+      transfer_rules TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS wallets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_type TEXT NOT NULL,
+      owner_id INTEGER,
+      label TEXT NOT NULL,
+      address TEXT NOT NULL UNIQUE,
+      network TEXT NOT NULL,
+      wallet_type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS token_balances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      wallet_address TEXT NOT NULL,
+      token_symbol TEXT NOT NULL,
+      balance INTEGER NOT NULL,
+      locked_balance INTEGER NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(project_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS distributions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       project_id INTEGER NOT NULL,

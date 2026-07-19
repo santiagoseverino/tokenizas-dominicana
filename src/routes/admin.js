@@ -3,6 +3,7 @@ const { requireAdmin } = require("../middleware/auth");
 const { toCsv } = require("../lib/csv");
 const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
+const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 
 function registerAdminRoutes(app) {
   app.get("/admin", requireAdmin, (req, res) => {
@@ -13,7 +14,7 @@ function registerAdminRoutes(app) {
     const leads = store.all("SELECT * FROM leads ORDER BY id DESC LIMIT 8");
     res.send(layout("Admin", `
       <main class="page">
-        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
+        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/tokenization">Tokenizacion</a> <a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
         <section class="split">
           <div class="panel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span>${project.title}</span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
           <div class="panel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>
@@ -70,6 +71,85 @@ function registerAdminRoutes(app) {
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_admin_credentials", "settings", adminUser, new Date().toISOString()]);
     res.setHeader("Set-Cookie", "tokenizas_admin=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
     res.redirect("/login");
+  });
+
+  app.get("/admin/tokenization", requireAdmin, (req, res) => {
+    const projects = store.all(`
+      SELECT p.*, tm.mint_address, tm.network, tm.status mint_status, tm.multisig_wallet
+      FROM projects p
+      LEFT JOIN token_mints tm ON tm.project_id = p.id
+      ORDER BY p.id
+    `);
+    const pendingInvestments = store.all(`
+      SELECT i.*, u.name investor_name, u.kyc_status, p.title project_title, p.token_symbol
+      FROM investments i
+      JOIN users u ON u.id = i.user_id
+      JOIN projects p ON p.id = i.project_id
+      WHERE i.status IN ('pending_payment', 'compliance_review')
+      ORDER BY i.id DESC
+    `);
+    const balances = store.all(`
+      SELECT tb.*, u.name investor_name, p.title project_title
+      FROM token_balances tb
+      JOIN users u ON u.id = tb.user_id
+      JOIN projects p ON p.id = tb.project_id
+      ORDER BY tb.updated_at DESC
+    `);
+    const events = store.all(`
+      SELECT te.*, p.token_symbol, p.title project_title
+      FROM token_events te
+      JOIN projects p ON p.id = te.project_id
+      ORDER BY te.id DESC LIMIT 12
+    `);
+    res.send(layout("Tokenizacion", `
+      <main class="page">
+        <div class="sectionHead">
+          <p class="eyebrow">Solana</p>
+          <h1>Tokenizacion de proyectos</h1>
+          <p class="muted">Simulador operativo para configurar mints, wallets, whitelist y emision. No firma transacciones reales todavia.</p>
+          <p><a class="button small" href="/admin">Volver</a></p>
+        </div>
+        <section class="panel tablePanel">
+          <h3>Mints por proyecto</h3>
+          <table class="dataTable">
+            <thead><tr><th>Proyecto</th><th>Token</th><th>Supply</th><th>Mint</th><th>Multisig</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td><form method="post" action="/admin/tokenization/projects/${project.id}/mint"><button class="button small" type="submit">Configurar</button></form></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </section>
+        <section class="split">
+          <div class="panel">
+            <h3>Ordenes pendientes</h3>
+            ${pendingInvestments.map((item) => `<div class="event"><b>${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${item.kyc_status} - ${item.status}</span><form method="post" action="/admin/tokenization/investments/${item.id}/issue"><button class="button small" type="submit">Emitir tokens</button></form></div>`).join("") || "<p class=\"muted\">No hay ordenes pendientes.</p>"}
+          </div>
+          <div class="panel">
+            <h3>Balances tokenizados</h3>
+            ${balances.map((balance) => `<div class="event"><b>${balance.investor_name}</b><span>${balance.project_title}</span><p>${balance.balance} ${balance.token_symbol} / bloqueados: ${balance.locked_balance}</p><span>${balance.wallet_address}</span></div>`).join("") || "<p class=\"muted\">Sin balances todavia.</p>"}
+          </div>
+        </section>
+        <section class="panel">
+          <h3>Eventos on-chain simulados</h3>
+          ${events.map((event) => `<div class="event"><b>${event.event_type} - ${event.token_symbol}</b><span>${event.signature}</span><p>${event.note}</p></div>`).join("")}
+        </section>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/tokenization/projects/:id/mint", requireAdmin, (req, res) => {
+    const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
+    if (!project) return res.status(404).send("Proyecto no encontrado");
+    ensureProjectMint(project);
+    res.redirect("/admin/tokenization");
+  });
+
+  app.post("/admin/tokenization/investments/:id/issue", requireAdmin, (req, res) => {
+    try {
+      issueTokensForInvestment(req.params.id);
+      res.redirect("/admin/tokenization");
+    } catch (error) {
+      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
+    }
   });
 
   app.get("/admin/leads", requireAdmin, (req, res) => {

@@ -1,4 +1,5 @@
 const store = require("../db");
+const { notifyLead } = require("../lib/notifications");
 const { tr } = require("../lib/i18n");
 const { layout, whatsappUrl } = require("../lib/ui");
 
@@ -41,16 +42,26 @@ function registerContactRoutes(app) {
     if (!name || !email || !interest || req.body.consent !== "yes") {
       return res.status(400).send(contactPage(req, "Completa nombre, email, interes y consentimiento."));
     }
-    store.run("INSERT INTO leads (name, company, email, whatsapp, interest, message, consent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+    const lead = {
       name,
-      String(req.body.company || "").trim(),
+      company: String(req.body.company || "").trim(),
       email,
-      String(req.body.whatsapp || "").trim(),
+      whatsapp: String(req.body.whatsapp || "").trim(),
       interest,
-      String(req.body.message || "").trim(),
+      message: String(req.body.message || "").trim()
+    };
+    store.run("INSERT INTO leads (name, company, email, whatsapp, interest, message, consent, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+      name,
+      lead.company,
+      email,
+      lead.whatsapp,
+      interest,
+      lead.message,
       "yes",
+      "new",
       new Date().toISOString()
     ]);
+    notifyLead(lead);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [name, "created_lead", "contact", `${interest} - ${email}`, new Date().toISOString()]);
     res.send(contactPage(req, "", t.leadSaved));
   });

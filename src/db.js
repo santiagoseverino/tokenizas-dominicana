@@ -124,9 +124,20 @@ function migrate() {
       interest TEXT NOT NULL,
       message TEXT,
       consent TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new',
+      internal_notes TEXT,
       created_at TEXT NOT NULL
     );
   `);
+
+  const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);
+  if (!leadColumns.includes("status")) {
+    db.run("ALTER TABLE leads ADD COLUMN status TEXT NOT NULL DEFAULT 'new'");
+  }
+  if (!leadColumns.includes("internal_notes")) {
+    db.run("ALTER TABLE leads ADD COLUMN internal_notes TEXT");
+  }
+  saveDb();
 }
 
 function all(sql, params = []) {

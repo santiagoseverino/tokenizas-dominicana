@@ -1,5 +1,6 @@
 const store = require("../db");
 const { requireAdmin } = require("../middleware/auth");
+const { toCsv } = require("../lib/csv");
 const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
 
@@ -18,11 +19,92 @@ function registerAdminRoutes(app) {
           <div class="panel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>
         </section>
         <section class="split">
-          <div class="panel"><h3>Interesados</h3>${leads.map((lead) => `<div class="event"><b>${lead.name}</b><span>${lead.email} - ${lead.whatsapp || "sin WhatsApp"}</span><p>${lead.interest}</p></div>`).join("") || "<p class=\"muted\">Sin solicitudes todavia.</p>"}</div>
+          <div class="panel"><h3>Interesados</h3>${leads.map((lead) => `<div class="event"><b>${lead.name}</b><span>${lead.email} - ${lead.whatsapp || "sin WhatsApp"}</span><p>${lead.interest}</p><a href="/admin/leads/${lead.id}">Ver detalle</a></div>`).join("") || "<p class=\"muted\">Sin solicitudes todavia.</p>"}<p><a class="button small" href="/admin/leads">Ver todos</a></p></div>
           <div class="panel"><h3>Auditoria</h3>${logs.map((log) => `<div class="event"><b>${log.action}</b><span>${log.actor} - ${log.entity}</span><p>${log.details}</p></div>`).join("")}</div>
         </section>
       </main>
     `, req));
+  });
+
+  app.get("/admin/leads", requireAdmin, (req, res) => {
+    const leads = store.all("SELECT * FROM leads ORDER BY id DESC");
+    res.send(layout("Interesados", `
+      <main class="page">
+        <div class="sectionHead">
+          <p class="eyebrow">CRM</p>
+          <h1>Interesados</h1>
+          <p><a class="button small" href="/admin">Volver</a> <a class="button small" href="/admin/leads.csv">Exportar CSV</a></p>
+        </div>
+        <section class="panel tablePanel">
+          <table class="dataTable">
+            <thead><tr><th>Nombre</th><th>Email</th><th>WhatsApp</th><th>Interes</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+            <tbody>
+              ${leads.map((lead) => `<tr><td>${lead.name}</td><td>${lead.email}</td><td>${lead.whatsapp || ""}</td><td>${lead.interest}</td><td><span class="statusBadge">${lead.status}</span></td><td>${lead.created_at}</td><td><a href="/admin/leads/${lead.id}">Abrir</a></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </section>
+      </main>
+    `, req));
+  });
+
+  app.get("/admin/leads.csv", requireAdmin, (req, res) => {
+    const leads = store.all("SELECT * FROM leads ORDER BY id DESC");
+    const csv = toCsv(leads, [
+      { key: "id", label: "ID" },
+      { key: "name", label: "Nombre" },
+      { key: "company", label: "Empresa" },
+      { key: "email", label: "Email" },
+      { key: "whatsapp", label: "WhatsApp" },
+      { key: "interest", label: "Interes" },
+      { key: "status", label: "Estado" },
+      { key: "message", label: "Mensaje" },
+      { key: "internal_notes", label: "Notas internas" },
+      { key: "created_at", label: "Fecha" }
+    ]);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=tokenizas-leads.csv");
+    res.send(csv);
+  });
+
+  app.get("/admin/leads/:id", requireAdmin, (req, res) => {
+    const lead = store.get("SELECT * FROM leads WHERE id = ?", [req.params.id]);
+    if (!lead) return res.status(404).send("Interesado no encontrado");
+    res.send(layout(lead.name, `
+      <main class="page">
+        <div class="sectionHead"><p class="eyebrow">CRM</p><h1>${lead.name}</h1><p><a class="button small" href="/admin/leads">Volver</a></p></div>
+        <section class="split">
+          <div class="panel">
+            <h3>Informacion</h3>
+            <div class="fact"><span>Empresa</span><strong>${lead.company || "N/A"}</strong></div>
+            <div class="fact"><span>Email</span><strong>${lead.email}</strong></div>
+            <div class="fact"><span>WhatsApp</span><strong>${lead.whatsapp || "N/A"}</strong></div>
+            <div class="fact"><span>Interes</span><strong>${lead.interest}</strong></div>
+            <div class="fact"><span>Fecha</span><strong>${lead.created_at}</strong></div>
+            <p class="muted">${lead.message || "Sin mensaje adicional."}</p>
+          </div>
+          <form class="panel contactForm" method="post" action="/admin/leads/${lead.id}">
+            <h3>Seguimiento interno</h3>
+            <label>Estado
+              <select name="status">
+                ${["new", "contacted", "qualified", "proposal", "closed", "archived"].map((status) => `<option value="${status}" ${lead.status === status ? "selected" : ""}>${status}</option>`).join("")}
+              </select>
+            </label>
+            <label>Notas internas
+              <textarea name="internal_notes" rows="7">${lead.internal_notes || ""}</textarea>
+            </label>
+            <button class="button primary" type="submit">Guardar</button>
+          </form>
+        </section>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/leads/:id", requireAdmin, (req, res) => {
+    const status = String(req.body.status || "new");
+    const notes = String(req.body.internal_notes || "");
+    store.run("UPDATE leads SET status = ?, internal_notes = ? WHERE id = ?", [status, notes, req.params.id]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_lead", `lead:${req.params.id}`, status, new Date().toISOString()]);
+    res.redirect(`/admin/leads/${req.params.id}`);
   });
 }
 

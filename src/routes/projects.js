@@ -1,16 +1,35 @@
 const store = require("../db");
 const { fact, layout, money, number, projectCard, statusLabel } = require("../lib/ui");
 
+const categoryFilters = {
+  "real-estate": { title: "Bienes raices", patterns: ["renta", "residencial", "inmobiliario", "torre", "villas"] },
+  agriculture: { title: "Agricultura", patterns: ["agro", "cacao", "finca", "agricola"] },
+  art: { title: "Arte", patterns: ["arte", "galeria", "coleccion"] },
+  music: { title: "Musica", patterns: ["musica", "royalties", "catalogo"] },
+  tourism: { title: "Turismo", patterns: ["turistica", "hotel", "hospitality", "eco"] },
+  business: { title: "Negocios", patterns: ["negocio", "pyme", "empresa"] },
+  energy: { title: "Energia", patterns: ["energia", "solar", "renovable"] }
+};
+
+function projectMatchesCategory(project, category) {
+  if (!category || !categoryFilters[category]) return true;
+  const value = `${project.slug} ${project.title} ${project.type} ${project.description}`.toLowerCase();
+  return categoryFilters[category].patterns.some((pattern) => value.includes(pattern));
+}
+
 function registerProjectRoutes(app) {
   app.get("/projects", (req, res) => {
-    const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC");
+    const category = String(req.query.category || "");
+    const categoryTitle = categoryFilters[category] ? categoryFilters[category].title : "Todos";
+    const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC").filter((project) => projectMatchesCategory(project, category));
     res.send(layout("Proyectos", `
       <main class="page">
         <div class="sectionHead">
           <p class="eyebrow">Marketplace primario</p>
-          <h1>Proyectos inmobiliarios</h1>
+          <h1>${category === "agriculture" ? "Proyectos de agricultura" : category === "real-estate" ? "Proyectos inmobiliarios" : "Proyectos tokenizables"}</h1>
+          <p class="muted">Categoria: ${categoryTitle}</p>
         </div>
-        <div class="grid cards">${projects.map(projectCard).join("")}</div>
+        <div class="grid cards">${projects.map(projectCard).join("") || "<p class=\"muted\">Todavia no hay proyectos publicados en esta categoria.</p>"}</div>
       </main>
     `, req));
   });

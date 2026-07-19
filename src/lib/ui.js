@@ -20,9 +20,20 @@ function layout(title, body, req) {
     </head>
     <body>
       <header class="topbar">
-        <a class="brand" href="/"><img src="/logo.svg" alt="Tokenizas Dominicana" /></a>
+        <a class="brand" href="/"><img src="/dominicana-logo.png" alt="Dominicana.com" width="760" height="184" /></a>
         <nav>
-          <a href="/projects">${t.projects}</a>
+          <div class="navDrop">
+            <a href="/projects">${t.projects}</a>
+            <div class="dropMenu">
+              <a href="/projects?category=real-estate">Bienes raices</a>
+              <a href="/projects?category=agriculture">Agricultura</a>
+              <a href="/projects?category=art">Arte</a>
+              <a href="/projects?category=music">Musica</a>
+              <a href="/projects?category=tourism">Turismo</a>
+              <a href="/projects?category=business">Negocios</a>
+              <a href="/projects?category=energy">Energia</a>
+            </div>
+          </div>
           <a href="/invest">${t.invest}</a>
           <a href="/dashboard">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>

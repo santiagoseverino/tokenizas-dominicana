@@ -43,12 +43,37 @@ function leadEmailText(lead) {
   ].join("\n");
 }
 
-async function notifyLead(lead) {
-  if (!smtpConfigured()) {
-    return { sent: false, reason: "smtp_not_configured" };
-  }
+function confirmationEmailHtml(lead, t) {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#082f49;line-height:1.5">
+      <h2>${t.confirmIntro}</h2>
+      <p>${t.confirmBody}</p>
+      <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;border:1px solid #d5e2ea">
+        <tr><td><strong>${t.name}</strong></td><td>${lead.name}</td></tr>
+        <tr><td><strong>${t.interest}</strong></td><td>${lead.interest}</td></tr>
+      </table>
+      <p style="margin-top:18px">${t.confirmFooter}</p>
+      <p><a href="https://tokenizas.dominicana.com">tokenizas.dominicana.com</a></p>
+    </div>
+  `;
+}
 
-  const transporter = nodemailer.createTransport({
+function confirmationEmailText(lead, t) {
+  return [
+    t.confirmIntro,
+    "",
+    t.confirmBody,
+    "",
+    `${t.name}: ${lead.name}`,
+    `${t.interest}: ${lead.interest}`,
+    "",
+    t.confirmFooter,
+    "https://tokenizas.dominicana.com"
+  ].join("\n");
+}
+
+function createTransporter() {
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
     secure: String(process.env.SMTP_SECURE).toLowerCase() === "true",
@@ -57,9 +82,19 @@ async function notifyLead(lead) {
       pass: process.env.SMTP_PASS
     }
   });
+}
 
+async function notifyLead(lead, t) {
+  if (!smtpConfigured()) {
+    return {
+      admin: { sent: false, reason: "smtp_not_configured" },
+      lead: { sent: false, reason: "smtp_not_configured" }
+    };
+  }
+
+  const transporter = createTransporter();
   const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
-  const info = await transporter.sendMail({
+  const adminInfo = await transporter.sendMail({
     from,
     to: process.env.ADMIN_NOTIFY_EMAIL,
     replyTo: lead.email,
@@ -68,7 +103,19 @@ async function notifyLead(lead) {
     html: leadEmailHtml(lead)
   });
 
-  return { sent: true, messageId: info.messageId };
+  const leadInfo = await transporter.sendMail({
+    from,
+    to: lead.email,
+    replyTo: process.env.ADMIN_NOTIFY_EMAIL,
+    subject: t.confirmSubject,
+    text: confirmationEmailText(lead, t),
+    html: confirmationEmailHtml(lead, t)
+  });
+
+  return {
+    admin: { sent: true, messageId: adminInfo.messageId },
+    lead: { sent: true, messageId: leadInfo.messageId }
+  };
 }
 
 module.exports = { notifyLead };

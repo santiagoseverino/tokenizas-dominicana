@@ -63,12 +63,19 @@ function registerContactRoutes(app) {
     ]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [name, "created_lead", "contact", `${interest} - ${email}`, new Date().toISOString()]);
     try {
-      const result = await notifyLead(lead);
+      const result = await notifyLead(lead, t);
       store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [
         "System",
-        result.sent ? "sent_lead_email" : "skipped_lead_email",
+        result.admin.sent ? "sent_lead_email" : "skipped_lead_email",
         email,
-        result.sent ? result.messageId : result.reason,
+        result.admin.sent ? result.admin.messageId : result.admin.reason,
+        new Date().toISOString()
+      ]);
+      store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [
+        "System",
+        result.lead.sent ? "sent_lead_confirmation" : "skipped_lead_confirmation",
+        email,
+        result.lead.sent ? result.lead.messageId : result.lead.reason,
         new Date().toISOString()
       ]);
     } catch (error) {

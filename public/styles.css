@@ -285,6 +285,7 @@ textarea {
 .offerSlider {
   overflow: hidden;
   padding: 4px 0 22px;
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
 }
 .offerTrack {
   width: max-content;
@@ -303,12 +304,15 @@ textarea {
   overflow: hidden;
   border-radius: 8px;
   background: var(--blue);
+  color: white;
 }
+.offerSlide:hover img { transform: scale(1.04); }
 .offerSlide img {
   width: 100%;
   height: 210px;
   object-fit: cover;
   display: block;
+  transition: transform .35s ease;
 }
 .offerSlide::after {
   content: "";

@@ -49,17 +49,21 @@ function registerHomeRoutes(app) {
           <div class="offerSlider" aria-label="Categorias tokenizables">
             <div class="offerTrack">
             ${[
-              ["Bienes raices", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=720&q=68"],
-              ["Agricultura", "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=720&q=68"],
-              ["Arte", "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=720&q=68"],
-              ["Musica", "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=720&q=68"],
-              ["Turismo", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=68"],
-              ["Bienes raices", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=720&q=68"],
-              ["Agricultura", "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=720&q=68"],
-              ["Arte", "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=720&q=68"],
-              ["Musica", "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=720&q=68"],
-              ["Turismo", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=68"]
-            ].map((item) => `<article class="offerSlide"><img src="${item[1]}" alt="${item[0]}" loading="lazy" decoding="async" width="720" height="420" /><strong>${item[0]}</strong></article>`).join("")}
+              ["Bienes raices", "/category-images/real-estate.webp", "/projects?category=real-estate"],
+              ["Agricultura", "/category-images/agriculture.webp", "/projects?category=agriculture"],
+              ["Arte", "/category-images/art.webp", "/projects?category=art"],
+              ["Musica", "/category-images/music.webp", "/projects?category=music"],
+              ["Turismo", "/category-images/tourism.webp", "/projects?category=tourism"],
+              ["Negocios", "/category-images/business.webp", "/projects?category=business"],
+              ["Energia", "/category-images/energy.webp", "/projects?category=energy"],
+              ["Bienes raices", "/category-images/real-estate.webp", "/projects?category=real-estate"],
+              ["Agricultura", "/category-images/agriculture.webp", "/projects?category=agriculture"],
+              ["Arte", "/category-images/art.webp", "/projects?category=art"],
+              ["Musica", "/category-images/music.webp", "/projects?category=music"],
+              ["Turismo", "/category-images/tourism.webp", "/projects?category=tourism"],
+              ["Negocios", "/category-images/business.webp", "/projects?category=business"],
+              ["Energia", "/category-images/energy.webp", "/projects?category=energy"]
+            ].map((item) => `<a class="offerSlide" href="${item[2]}"><img src="${item[1]}" alt="${item[0]}" loading="lazy" decoding="async" width="720" height="420" /><strong>${item[0]}</strong></a>`).join("")}
             </div>
           </div>
           <div class="grid featureGrid">

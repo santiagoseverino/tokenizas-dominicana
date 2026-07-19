@@ -28,21 +28,33 @@ npm start
 - Dashboard de inversionista.
 - Back office con KYC/KYB, capital levantado y auditoria.
 - Seeder con proyectos, usuarios, documentos, ofertas, inversiones, distribuciones, wallets, mints y balances tokenizados.
-- Modo Solana testnet real para crear mints SPL y emitir tokens cuando se configura una wallet pagadora.
+- Modo Solana devnet real para crear mints SPL y emitir tokens cuando se configura una wallet pagadora.
 - Healthcheck en `/health`.
 
-## Solana testnet
+## Solana devnet
 
-Por defecto el proyecto corre en modo demo para que el seeder funcione sin fondos. Para crear mints y emitir tokens reales en Solana testnet, configura estas variables en `.env`:
+Por defecto el proyecto corre en modo demo para que el seeder funcione sin fondos. Para crear mints y emitir tokens reales en Solana devnet, genera una wallet de desarrollo:
 
 ```bash
-SOLANA_CLUSTER=testnet
-SOLANA_RPC_URL=https://api.testnet.solana.com
-SOLANA_PAYER_SECRET_KEY=[12,34,...]
+npm run solana:wallet
+```
+
+Copia el `PUBLIC` y pide SOL gratis en el faucet de Solana usando la red devnet. Despues configura estas variables en `.env`:
+
+```bash
+SOLANA_CLUSTER=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_PAYER_SECRET_KEY=[12,34,...64 numeros en total...]
 SOLANA_TOKEN_DECIMALS=0
 ```
 
-`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON de la llave privada de una wallet de testnet con SOL de prueba. Esa wallet sera la autoridad del mint y pagara las transacciones. Despues ejecuta:
+`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON completo de la llave privada, con 64 numeros. Esa wallet sera la autoridad del mint y pagara las transacciones. Verifica la configuracion:
+
+```bash
+npm run solana:check
+```
+
+Despues ejecuta:
 
 ```bash
 npm install
@@ -50,7 +62,7 @@ npm run seed
 systemctl restart tokenizas-dominicana
 ```
 
-El panel `/admin/tokenization` usara testnet real cuando esa llave exista. Sin esa llave mantiene el modo demo.
+El panel `/admin/tokenization` usara devnet real cuando esa llave exista. Sin esa llave mantiene el modo demo.
 
 ## Despliegue
 
@@ -58,4 +70,4 @@ Ver [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md) para subirlo a GitHub e instalarlo en U
 
 ## Nota
 
-El modo testnet usa SPL Token basico. Para produccion se debe completar Solana Token Extensions, Transfer Hook, multisig, custodia, monitoreo on-chain y auditoria legal/tecnica.
+El modo devnet usa SPL Token basico. Para produccion se debe completar Solana Token Extensions, Transfer Hook, multisig, custodia, monitoreo on-chain y auditoria legal/tecnica.

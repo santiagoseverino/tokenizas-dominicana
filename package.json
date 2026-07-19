@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "seed": "node src/seed.js",
+    "solana:wallet": "node src/tools/create-solana-wallet.js",
+    "solana:check": "node src/tools/check-solana-wallet.js",
     "dev": "node src/server.js",
     "health": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>r.json()).then(console.log)\""
   },

@@ -3,13 +3,25 @@ const config = require("../config");
 function parseSecretKey(value) {
   if (!value) return null;
   const trimmed = value.trim();
+  let bytes;
   try {
     const parsed = JSON.parse(trimmed);
-    if (Array.isArray(parsed)) return Uint8Array.from(parsed);
+    if (Array.isArray(parsed)) bytes = parsed;
   } catch (_) {
-    return Uint8Array.from(Buffer.from(trimmed, "base64"));
+    if (/^\d+(,\d+){63}$/.test(trimmed)) {
+      bytes = trimmed.split(",").map((item) => Number(item.trim()));
+    } else {
+      bytes = Array.from(Buffer.from(trimmed, "base64"));
+    }
   }
-  return null;
+  if (!bytes) return null;
+  if (bytes.length !== 64) {
+    throw new Error(`SOLANA_PAYER_SECRET_KEY debe tener 64 numeros. Ahora tiene ${bytes.length}. Genera una nueva con: npm run solana:wallet`);
+  }
+  if (bytes.some((byte) => !Number.isInteger(byte) || byte < 0 || byte > 255)) {
+    throw new Error("SOLANA_PAYER_SECRET_KEY contiene valores invalidos. Deben ser numeros entre 0 y 255.");
+  }
+  return Uint8Array.from(bytes);
 }
 
 function isRealSolanaEnabled() {

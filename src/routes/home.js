@@ -17,6 +17,13 @@ function registerHomeRoutes(app) {
     res.send(layout("Inicio", `
       <main>
         <section class="hero">
+          <div class="heroSlides" aria-hidden="true">
+            <span style="background-image:url('/category-images/real-estate.webp')"></span>
+            <span style="background-image:url('/category-images/agriculture.webp')"></span>
+            <span style="background-image:url('/category-images/music.webp')"></span>
+            <span style="background-image:url('/category-images/tourism.webp')"></span>
+            <span style="background-image:url('/category-images/art.webp')"></span>
+          </div>
           <div class="heroOverlay"></div>
           <div class="heroContent">
             <p class="eyebrow">${t.heroEyebrow}</p>
@@ -45,26 +52,6 @@ function registerHomeRoutes(app) {
             <p class="eyebrow">Tokenization platform</p>
             <h2>${t.modulesTitle}</h2>
             <p class="muted">${t.modulesLead}</p>
-          </div>
-          <div class="offerSlider" aria-label="Categorias tokenizables">
-            <div class="offerTrack">
-            ${[
-              ["Bienes raices", "/category-images/real-estate.webp", "/projects?category=real-estate"],
-              ["Agricultura", "/category-images/agriculture.webp", "/projects?category=agriculture"],
-              ["Arte", "/category-images/art.webp", "/projects?category=art"],
-              ["Musica", "/category-images/music.webp", "/projects?category=music"],
-              ["Turismo", "/category-images/tourism.webp", "/projects?category=tourism"],
-              ["Negocios", "/category-images/business.webp", "/projects?category=business"],
-              ["Energia", "/category-images/energy.webp", "/projects?category=energy"],
-              ["Bienes raices", "/category-images/real-estate.webp", "/projects?category=real-estate"],
-              ["Agricultura", "/category-images/agriculture.webp", "/projects?category=agriculture"],
-              ["Arte", "/category-images/art.webp", "/projects?category=art"],
-              ["Musica", "/category-images/music.webp", "/projects?category=music"],
-              ["Turismo", "/category-images/tourism.webp", "/projects?category=tourism"],
-              ["Negocios", "/category-images/business.webp", "/projects?category=business"],
-              ["Energia", "/category-images/energy.webp", "/projects?category=energy"]
-            ].map((item) => `<a class="offerSlide" href="${item[2]}"><img src="${item[1]}" alt="${item[0]}" loading="lazy" decoding="async" width="720" height="420" /><strong>${item[0]}</strong></a>`).join("")}
-            </div>
           </div>
           <div class="grid featureGrid">
             ${featureCard(t.backOffice, t.backOfficeText, "01")}

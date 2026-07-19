@@ -52,34 +52,6 @@ systemctl restart tokenizas-dominicana
 
 El panel `/admin/tokenization` usara testnet real cuando esa llave exista. Sin esa llave mantiene el modo demo.
 
-## Hermes WhatsApp
-
-Hermes es el agente inicial por WhatsApp. Responde preguntas, recopila intencion, proyecto, presupuesto y pais, y cuando tiene suficiente informacion escala el caso a una agente senior.
-
-Panel interno:
-
-```text
-/admin/hermes
-```
-
-Webhook para WhatsApp Cloud API:
-
-```text
-https://tokenizas.dominicana.com/webhooks/whatsapp
-```
-
-Variables necesarias:
-
-```bash
-WHATSAPP_VERIFY_TOKEN=tokenizas-hermes-verify
-WHATSAPP_ACCESS_TOKEN=
-WHATSAPP_PHONE_NUMBER_ID=
-HERMES_SUPER_AGENT_NAME=Sofia Reyes
-HERMES_HANDOFF_EMAIL=
-```
-
-Sin `WHATSAPP_ACCESS_TOKEN` Hermes guarda y responde en el panel admin, pero no envia mensajes reales por WhatsApp. Con `WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID`, responde usando WhatsApp Cloud API.
-
 ## Despliegue
 
 Ver [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md) para subirlo a GitHub e instalarlo en Ubuntu/Contabo con systemd, Nginx, dominio y HTTPS.

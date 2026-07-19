@@ -26,10 +26,5 @@ module.exports = {
   solanaCluster: process.env.SOLANA_CLUSTER || "testnet",
   solanaRpcUrl: process.env.SOLANA_RPC_URL || "https://api.testnet.solana.com",
   solanaPayerSecretKey: process.env.SOLANA_PAYER_SECRET_KEY || "",
-  solanaTokenDecimals: Number(process.env.SOLANA_TOKEN_DECIMALS || 0),
-  whatsappVerifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "tokenizas-hermes-verify",
-  whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || "",
-  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
-  hermesSuperAgentName: process.env.HERMES_SUPER_AGENT_NAME || "Sofia Reyes",
-  hermesHandoffEmail: process.env.HERMES_HANDOFF_EMAIL || process.env.ADMIN_NOTIFY_EMAIL || ""
+  solanaTokenDecimals: Number(process.env.SOLANA_TOKEN_DECIMALS || 0)
 };

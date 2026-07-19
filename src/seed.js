@@ -1,6 +1,5 @@
 const { initDb, all, run, exec } = require("./db");
 const { ensureProjectMint, ensureWalletForUser, issueTokensForInvestment } = require("./lib/tokenization");
-const { handleInboundMessage } = require("./lib/hermes");
 
 (async () => {
   await initDb();
@@ -18,8 +17,6 @@ const { handleInboundMessage } = require("./lib/hermes");
     DELETE FROM documents;
     DELETE FROM projects;
     DELETE FROM users;
-    DELETE FROM whatsapp_messages;
-    DELETE FROM whatsapp_conversations;
   `);
 
   [
@@ -97,13 +94,6 @@ const { handleInboundMessage } = require("./lib/hermes");
     ["System", "issued_tokens", "Maria Rodriguez", "2,500 PCV1 enviados a wallet aprobada.", now]
   ].forEach((row) => {
     run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", row);
-  });
-
-  await handleInboundMessage({
-    phone: "+18095550100",
-    name: "Carlos Demo",
-    text: "Hola, quiero invertir 10000 dolares en Punta Cana desde Republica Dominicana este mes",
-    providerMessageId: "seed-demo"
   });
 
   console.log("Seeder completado. Base de datos lista en data/tokenizas.sqlite");

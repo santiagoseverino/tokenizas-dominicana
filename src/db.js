@@ -173,34 +173,6 @@ function migrate() {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
-
-    CREATE TABLE IF NOT EXISTS whatsapp_conversations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      phone TEXT NOT NULL UNIQUE,
-      contact_name TEXT,
-      language TEXT NOT NULL DEFAULT 'es',
-      stage TEXT NOT NULL DEFAULT 'collecting',
-      intent TEXT,
-      project_interest TEXT,
-      budget TEXT,
-      country TEXT,
-      timeframe TEXT,
-      summary TEXT,
-      assigned_agent TEXT,
-      handoff_ready INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS whatsapp_messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      conversation_id INTEGER NOT NULL,
-      direction TEXT NOT NULL,
-      sender TEXT NOT NULL,
-      message TEXT NOT NULL,
-      provider_message_id TEXT,
-      created_at TEXT NOT NULL
-    );
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);

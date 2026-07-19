@@ -14,7 +14,7 @@ function registerAdminRoutes(app) {
     const leads = store.all("SELECT * FROM leads ORDER BY id DESC LIMIT 8");
     res.send(layout("Admin", `
       <main class="page">
-        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/tokenization">Tokenizacion</a> <a class="button small" href="/admin/hermes">Hermes WhatsApp</a> <a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
+        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/tokenization">Tokenizacion</a> <a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
         <section class="split">
           <div class="panel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span>${project.title}</span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
           <div class="panel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>

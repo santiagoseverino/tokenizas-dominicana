@@ -317,6 +317,11 @@ textarea {
   display: grid;
   gap: 16px;
 }
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
 .checkLine {
   display: flex;
   gap: 10px;
@@ -426,7 +431,7 @@ textarea {
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
   .contactPage { padding-top: 0; }
   .contactIntro { padding: 36px 0; }

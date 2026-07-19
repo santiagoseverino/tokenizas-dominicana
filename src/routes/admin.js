@@ -5,6 +5,88 @@ const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function projectForm(project = {}, offering = {}, error = "") {
+  const isEdit = Boolean(project.id);
+  return `
+    <main class="page">
+      <div class="sectionHead">
+        <p class="eyebrow">Origination</p>
+        <h1>${isEdit ? "Editar proyecto" : "Crear proyecto tokenizable"}</h1>
+        <p><a class="button small" href="/admin">Volver</a></p>
+      </div>
+      <form class="panel contactForm" method="post" action="${isEdit ? `/admin/projects/${project.id}` : "/admin/projects"}">
+        ${error ? `<div class="alert">${error}</div>` : ""}
+        <section class="formGrid">
+          <label>Nombre del proyecto<input name="title" value="${project.title || ""}" required /></label>
+          <label>Slug publico<input name="slug" value="${project.slug || ""}" placeholder="se genera si queda vacio" /></label>
+          <label>Ubicacion<input name="location" value="${project.location || ""}" required /></label>
+          <label>Tipo<select name="type"><option ${project.type === "Renta corta turistica" ? "selected" : ""}>Renta corta turistica</option><option ${project.type === "Desarrollo residencial urbano" ? "selected" : ""}>Desarrollo residencial urbano</option><option ${project.type === "Deuda inmobiliaria" ? "selected" : ""}>Deuda inmobiliaria</option><option ${project.type === "Hotel / hospitality" ? "selected" : ""}>Hotel / hospitality</option></select></label>
+          <label>Meta USD<input name="target_raise" type="number" min="10000" step="1000" value="${project.target_raise || 1000000}" required /></label>
+          <label>Minimo USD<input name="min_investment" type="number" min="100" step="100" value="${project.min_investment || 1000}" required /></label>
+          <label>Simbolo token<input name="token_symbol" maxlength="10" value="${project.token_symbol || ""}" required /></label>
+          <label>Supply<input name="token_supply" type="number" min="1" step="1" value="${project.token_supply || 100000}" required /></label>
+          <label>Precio token USD<input name="token_price" type="number" min="0.01" step="0.01" value="${project.token_price || 10}" required /></label>
+          <label>Yield esperado %<input name="expected_yield" type="number" min="0" step="0.1" value="${project.expected_yield || 8}" required /></label>
+          <label>Estado<select name="status">${["due_diligence", "open", "funded"].map((status) => `<option value="${status}" ${project.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}</select></label>
+          <label>Riesgo<select name="risk_level">${["Bajo", "Medio", "Alto"].map((risk) => `<option ${project.risk_level === risk ? "selected" : ""}>${risk}</option>`).join("")}</select></label>
+          <label>Imagen URL<input name="image_url" value="${project.image_url || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1400&q=80"}" required /></label>
+          <label>Capital reservado USD<input name="raised" type="number" min="0" step="1000" value="${offering.raised || 0}" /></label>
+          <label>Apertura<input name="opens_at" type="date" value="${offering.opens_at || "2026-08-01"}" required /></label>
+          <label>Cierre<input name="closes_at" type="date" value="${offering.closes_at || "2026-10-30"}" required /></label>
+          <label>Lockup meses<input name="lockup_months" type="number" min="0" step="1" value="${offering.lockup_months || 12}" required /></label>
+        </section>
+        <label>Estructura legal<textarea name="legal_structure" rows="3" required>${project.legal_structure || "Fideicomiso inmobiliario con derechos economicos tokenizados"}</textarea></label>
+        <label>Descripcion comercial<textarea name="description" rows="5" required>${project.description || ""}</textarea></label>
+        <label>Documentos base, uno por linea<textarea name="documents" rows="5">${project.documents || "Titulo y certificacion registral\nTasacion independiente\nModelo financiero\nContrato de oferta\nInforme KYC/KYB del emisor"}</textarea></label>
+        <button class="button primary" type="submit">${isEdit ? "Guardar proyecto" : "Crear proyecto"}</button>
+      </form>
+    </main>
+  `;
+}
+
+function readProjectPayload(body) {
+  const title = String(body.title || "").trim();
+  const slug = slugify(body.slug || title);
+  const targetRaise = Number(body.target_raise || 0);
+  const tokenSupply = Number(body.token_supply || 0);
+  const tokenPrice = Number(body.token_price || 0);
+  if (!title || !slug || !body.location || !body.token_symbol || targetRaise <= 0 || tokenSupply <= 0 || tokenPrice <= 0) {
+    throw new Error("Completa nombre, ubicacion, token, meta, supply y precio.");
+  }
+  return {
+    slug,
+    title,
+    location: String(body.location || "").trim(),
+    type: String(body.type || "").trim(),
+    legal_structure: String(body.legal_structure || "").trim(),
+    target_raise: targetRaise,
+    min_investment: Number(body.min_investment || 0),
+    token_symbol: String(body.token_symbol || "").trim().toUpperCase(),
+    token_supply: tokenSupply,
+    token_price: tokenPrice,
+    expected_yield: Number(body.expected_yield || 0),
+    status: String(body.status || "due_diligence"),
+    image_url: String(body.image_url || "").trim(),
+    description: String(body.description || "").trim(),
+    risk_level: String(body.risk_level || "Medio"),
+    raised: Number(body.raised || 0),
+    opens_at: String(body.opens_at || ""),
+    closes_at: String(body.closes_at || ""),
+    lockup_months: Number(body.lockup_months || 0),
+    documents: String(body.documents || "")
+  };
+}
+
 function registerAdminRoutes(app) {
   app.get("/admin", requireAdmin, (req, res) => {
     const t = tr(req);
@@ -14,9 +96,9 @@ function registerAdminRoutes(app) {
     const leads = store.all("SELECT * FROM leads ORDER BY id DESC LIMIT 8");
     res.send(layout("Admin", `
       <main class="page">
-        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/tokenization">Tokenizacion</a> <a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
+        <div class="sectionHead"><p class="eyebrow">Back office</p><h1>Control operativo</h1><p><a class="button small" href="/admin/projects/new">Nuevo proyecto</a> <a class="button small" href="/admin/tokenization">Tokenizacion</a> <a class="button small" href="/admin/settings">Configuracion</a> <a class="button small" href="/logout">${t.logout}</a></p></div>
         <section class="split">
-          <div class="panel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span>${project.title}</span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
+          <div class="panel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span><a href="/admin/projects/${project.id}">${project.title}</a></span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
           <div class="panel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>
         </section>
         <section class="split">
@@ -71,6 +153,133 @@ function registerAdminRoutes(app) {
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_admin_credentials", "settings", adminUser, new Date().toISOString()]);
     res.setHeader("Set-Cookie", "tokenizas_admin=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
     res.redirect("/login");
+  });
+
+  app.get("/admin/projects/new", requireAdmin, (req, res) => {
+    res.send(layout("Nuevo proyecto", projectForm(), req));
+  });
+
+  app.post("/admin/projects", requireAdmin, (req, res) => {
+    let payload;
+    try {
+      payload = readProjectPayload(req.body);
+      if (store.get("SELECT id FROM projects WHERE slug = ?", [payload.slug])) throw new Error("Ya existe un proyecto con ese slug.");
+    } catch (error) {
+      return res.status(400).send(layout("Nuevo proyecto", projectForm(req.body, req.body, error.message), req));
+    }
+    const now = new Date().toISOString();
+    store.run(`
+      INSERT INTO projects
+      (slug, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      payload.slug,
+      payload.title,
+      payload.location,
+      payload.type,
+      payload.legal_structure,
+      payload.target_raise,
+      payload.min_investment,
+      payload.token_symbol,
+      payload.token_supply,
+      payload.token_price,
+      payload.expected_yield,
+      payload.status,
+      payload.image_url,
+      payload.description,
+      payload.risk_level,
+      now
+    ]);
+    const project = store.get("SELECT * FROM projects WHERE slug = ?", [payload.slug]);
+    store.run("INSERT INTO offerings (project_id, round_name, soft_cap, hard_cap, raised, opens_at, closes_at, lockup_months) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+      project.id,
+      "Ronda Genesis",
+      Math.round(payload.target_raise * 0.45),
+      payload.target_raise,
+      payload.raised,
+      payload.opens_at,
+      payload.closes_at,
+      payload.lockup_months
+    ]);
+    payload.documents.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).forEach((title) => {
+      store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, ?, ?)", [project.id, title, "legal", "review"]);
+    });
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "created_project", project.title, project.slug, now]);
+    res.redirect(`/admin/projects/${project.id}`);
+  });
+
+  app.get("/admin/projects/:id", requireAdmin, (req, res) => {
+    const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
+    if (!project) return res.status(404).send("Proyecto no encontrado");
+    const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]) || {};
+    const documents = store.all("SELECT title FROM documents WHERE project_id = ? ORDER BY id", [project.id]).map((doc) => doc.title).join("\n");
+    res.send(layout(project.title, projectForm({ ...project, documents }, offering), req));
+  });
+
+  app.post("/admin/projects/:id", requireAdmin, (req, res) => {
+    const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
+    if (!project) return res.status(404).send("Proyecto no encontrado");
+    let payload;
+    try {
+      payload = readProjectPayload(req.body);
+      const duplicate = store.get("SELECT id FROM projects WHERE slug = ? AND id != ?", [payload.slug, project.id]);
+      if (duplicate) throw new Error("Ya existe otro proyecto con ese slug.");
+    } catch (error) {
+      return res.status(400).send(layout("Editar proyecto", projectForm({ id: project.id, ...req.body }, req.body, error.message), req));
+    }
+    store.run(`
+      UPDATE projects
+      SET slug = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
+          token_symbol = ?, token_supply = ?, token_price = ?, expected_yield = ?, status = ?, image_url = ?,
+          description = ?, risk_level = ?
+      WHERE id = ?
+    `, [
+      payload.slug,
+      payload.title,
+      payload.location,
+      payload.type,
+      payload.legal_structure,
+      payload.target_raise,
+      payload.min_investment,
+      payload.token_symbol,
+      payload.token_supply,
+      payload.token_price,
+      payload.expected_yield,
+      payload.status,
+      payload.image_url,
+      payload.description,
+      payload.risk_level,
+      project.id
+    ]);
+    const existingOffering = store.get("SELECT id FROM offerings WHERE project_id = ?", [project.id]);
+    if (existingOffering) {
+      store.run("UPDATE offerings SET soft_cap = ?, hard_cap = ?, raised = ?, opens_at = ?, closes_at = ?, lockup_months = ? WHERE project_id = ?", [
+        Math.round(payload.target_raise * 0.45),
+        payload.target_raise,
+        payload.raised,
+        payload.opens_at,
+        payload.closes_at,
+        payload.lockup_months,
+        project.id
+      ]);
+    } else {
+      store.run("INSERT INTO offerings (project_id, round_name, soft_cap, hard_cap, raised, opens_at, closes_at, lockup_months) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+        project.id,
+        "Ronda Genesis",
+        Math.round(payload.target_raise * 0.45),
+        payload.target_raise,
+        payload.raised,
+        payload.opens_at,
+        payload.closes_at,
+        payload.lockup_months
+      ]);
+    }
+    store.run("DELETE FROM documents WHERE project_id = ?", [project.id]);
+    payload.documents.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).forEach((title) => {
+      store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, ?, ?)", [project.id, title, "legal", "review"]);
+    });
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_project", payload.title, payload.slug, new Date().toISOString()]);
+    res.redirect(`/admin/projects/${project.id}`);
   });
 
   app.get("/admin/tokenization", requireAdmin, (req, res) => {

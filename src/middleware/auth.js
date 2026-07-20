@@ -9,6 +9,21 @@ function getAdminCredentials() {
   };
 }
 
+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
+  const hash = crypto.pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
+  return `pbkdf2:${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedPassword) {
+  if (!storedPassword) return false;
+  if (!storedPassword.startsWith("pbkdf2:")) return password === storedPassword;
+  const [, salt, hash] = storedPassword.split(":");
+  if (!salt || !hash) return false;
+  const expected = hashPassword(password, salt).split(":")[2];
+  if (expected.length !== hash.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(hash, "hex"));
+}
+
 function signSession(value) {
   return crypto.createHmac("sha256", sessionSecret).update(value).digest("hex");
 }
@@ -38,4 +53,4 @@ function requireAdmin(req, res, next) {
   res.redirect("/login");
 }
 
-module.exports = { getAdminCredentials, isAdmin, requireAdmin, sessionCookieValue };
+module.exports = { getAdminCredentials, hashPassword, isAdmin, requireAdmin, sessionCookieValue, verifyPassword };

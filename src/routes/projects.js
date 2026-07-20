@@ -13,6 +13,7 @@ const categoryFilters = {
 
 function projectMatchesCategory(project, category) {
   if (!category || !categoryFilters[category]) return true;
+  if (project.category) return project.category === category;
   if (categoryFilters[category].slugs) return categoryFilters[category].slugs.includes(project.slug);
   const value = `${project.slug} ${project.title} ${project.type} ${project.description}`.toLowerCase();
   return categoryFilters[category].patterns.some((pattern) => value.includes(pattern));

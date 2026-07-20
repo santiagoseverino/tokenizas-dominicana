@@ -8,6 +8,15 @@ const { layout, money, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
+const projectCategories = [
+  ["real-estate", "Bienes raices"],
+  ["agriculture", "Agricultura"],
+  ["art", "Arte"],
+  ["music", "Musica"],
+  ["tourism", "Turismo"],
+  ["business", "Negocios"],
+  ["energy", "Energia"]
+];
 
 function slugify(value) {
   return String(value || "")
@@ -105,6 +114,7 @@ function projectForm(project = {}, offering = {}, error = "") {
         <section class="formGrid">
           <label>Nombre del proyecto<input name="title" value="${project.title || ""}" required /></label>
           <label>Slug publico<input name="slug" value="${project.slug || ""}" placeholder="se genera si queda vacio" /></label>
+          <label>Categoria<select name="category">${projectCategories.map(([value, label]) => `<option value="${value}" ${project.category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
           <label>Ubicacion<input name="location" value="${project.location || ""}" required /></label>
           <label>Tipo<select name="type"><option ${project.type === "Renta corta turistica" ? "selected" : ""}>Renta corta turistica</option><option ${project.type === "Desarrollo residencial urbano" ? "selected" : ""}>Desarrollo residencial urbano</option><option ${project.type === "Deuda inmobiliaria" ? "selected" : ""}>Deuda inmobiliaria</option><option ${project.type === "Hotel / hospitality" ? "selected" : ""}>Hotel / hospitality</option></select></label>
           <label>Meta USD<input name="target_raise" type="number" min="10000" step="1000" value="${project.target_raise || 1000000}" required /></label>
@@ -142,6 +152,7 @@ function readProjectPayload(body) {
   }
   return {
     slug,
+    category: String(body.category || "real-estate"),
     title,
     location: String(body.location || "").trim(),
     type: String(body.type || "").trim(),
@@ -252,10 +263,11 @@ function registerAdminRoutes(app) {
     const now = new Date().toISOString();
     store.run(`
       INSERT INTO projects
-      (slug, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       payload.slug,
+      payload.category,
       payload.title,
       payload.location,
       payload.type,
@@ -316,12 +328,13 @@ function registerAdminRoutes(app) {
     }
     store.run(`
       UPDATE projects
-      SET slug = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
+      SET slug = ?, category = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
           token_symbol = ?, token_supply = ?, token_price = ?, expected_yield = ?, status = ?, image_url = ?,
           description = ?, risk_level = ?
       WHERE id = ?
     `, [
       payload.slug,
+      payload.category,
       payload.title,
       payload.location,
       payload.type,

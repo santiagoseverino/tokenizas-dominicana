@@ -41,6 +41,8 @@ const { ensureProjectMint, ensureWalletForUser, issueTokensForInvestment } = req
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, project);
   });
+  run("UPDATE projects SET category = 'tourism' WHERE slug IN ('punta-cana-villas', 'samana-eco-hotel')");
+  run("UPDATE projects SET category = 'real-estate' WHERE slug = 'santo-domingo-torre'");
 
   const seededProjects = all("SELECT id, slug, target_raise FROM projects");
   const docs = ["Titulo y certificacion registral", "Tasacion independiente", "Modelo financiero", "Contrato de oferta", "Informe KYC/KYB del emisor"];

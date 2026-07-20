@@ -40,6 +40,7 @@ function migrate() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT NOT NULL UNIQUE,
       title TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'real-estate',
       location TEXT NOT NULL,
       type TEXT NOT NULL,
       legal_structure TEXT NOT NULL,
@@ -176,6 +177,14 @@ function migrate() {
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);
+  const projectColumns = all("PRAGMA table_info(projects)").map((column) => column.name);
+  if (!projectColumns.includes("category")) {
+    db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");
+    db.run("UPDATE projects SET category = 'agriculture' WHERE slug = 'finca-cacao-bayaguana'");
+    db.run("UPDATE projects SET category = 'music' WHERE slug = 'lionel-the-star-entertainment'");
+    db.run("UPDATE projects SET category = 'tourism' WHERE slug IN ('samana-eco-hotel', 'punta-cana-villas')");
+    db.run("UPDATE projects SET category = 'art' WHERE lower(type) LIKE '%arte%' OR lower(title) LIKE '%arte%'");
+  }
   if (!leadColumns.includes("status")) {
     db.run("ALTER TABLE leads ADD COLUMN status TEXT NOT NULL DEFAULT 'new'");
   }

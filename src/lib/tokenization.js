@@ -19,7 +19,7 @@ async function ensureProjectMint(project) {
     if (!canUpgradeDemoMint) return existing;
 
     const now = new Date().toISOString();
-    const chainMint = await createMintOnTestnet();
+    const chainMint = await createMintOnTestnet(project);
     store.run(`
       UPDATE token_mints
       SET network = ?, mint_address = ?, treasury_wallet = ?, authority_wallet = ?, multisig_wallet = ?,
@@ -41,16 +41,16 @@ async function ensureProjectMint(project) {
     store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
       project.id,
       "mint_upgraded_to_devnet",
-      "created-by-solana-devnet",
+      chainMint.metadataSignature || "created-by-solana-devnet",
       upgraded.multisig_wallet,
-      `Mint demo reemplazado por SPL real ${project.token_symbol} en ${upgraded.network}.`,
+      `Mint demo reemplazado por SPL real ${project.token_symbol} en ${upgraded.network}. Metadata: ${chainMint.metadataAddress || "pendiente"}.`,
       now
     ]);
     return upgraded;
   }
 
   const now = new Date().toISOString();
-  const chainMint = realMode ? await createMintOnTestnet() : null;
+  const chainMint = realMode ? await createMintOnTestnet(project) : null;
   store.run(`
     INSERT INTO token_mints
     (project_id, network, mint_address, treasury_wallet, authority_wallet, multisig_wallet, token_standard, decimals, transfer_rules, status, created_at)
@@ -73,9 +73,9 @@ async function ensureProjectMint(project) {
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     project.id,
     "mint_configured",
-    realMode ? "created-by-solana-devnet" : fakeSignature(),
+    realMode ? (chainMint.metadataSignature || "created-by-solana-devnet") : fakeSignature(),
     mint.multisig_wallet,
-    `Mint ${project.token_symbol} configurado en ${mint.network}.`,
+    `Mint ${project.token_symbol} configurado en ${mint.network}${chainMint && chainMint.metadataAddress ? ` con metadata ${chainMint.metadataAddress}` : ""}.`,
     now
   ]);
   return mint;

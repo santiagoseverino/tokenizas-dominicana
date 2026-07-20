@@ -39,7 +39,66 @@ async function loadSolana() {
   return { web3, spl, payer, connection };
 }
 
-async function createMintOnTestnet() {
+function encodeU32(value) {
+  const buffer = Buffer.alloc(4);
+  buffer.writeUInt32LE(value);
+  return buffer;
+}
+
+function encodeU16(value) {
+  const buffer = Buffer.alloc(2);
+  buffer.writeUInt16LE(value);
+  return buffer;
+}
+
+function encodeString(value) {
+  const data = Buffer.from(String(value || ""), "utf8");
+  return Buffer.concat([encodeU32(data.length), data]);
+}
+
+function encodeOptionNone() {
+  return Buffer.from([0]);
+}
+
+function metadataInstructionData({ name, symbol, uri }) {
+  return Buffer.concat([
+    Buffer.from([33]),
+    encodeString(name),
+    encodeString(symbol),
+    encodeString(uri),
+    encodeU16(0),
+    encodeOptionNone(),
+    encodeOptionNone(),
+    encodeOptionNone(),
+    Buffer.from([1]),
+    encodeOptionNone()
+  ]);
+}
+
+async function createMintMetadata({ web3, payer, connection, mint, name, symbol, uri }) {
+  const metadataProgram = new web3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+  const [metadata] = web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("metadata"), metadataProgram.toBuffer(), mint.toBuffer()],
+    metadataProgram
+  );
+  const instruction = new web3.TransactionInstruction({
+    programId: metadataProgram,
+    keys: [
+      { pubkey: metadata, isSigner: false, isWritable: true },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: payer.publicKey, isSigner: true, isWritable: false },
+      { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+      { pubkey: payer.publicKey, isSigner: false, isWritable: false },
+      { pubkey: web3.SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: web3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }
+    ],
+    data: metadataInstructionData({ name, symbol, uri })
+  });
+  const signature = await web3.sendAndConfirmTransaction(connection, new web3.Transaction().add(instruction), [payer]);
+  return { metadataAddress: metadata.toBase58(), metadataSignature: signature };
+}
+
+async function createMintOnTestnet(project = {}) {
   const { spl, payer, connection } = await loadSolana();
   const mint = await spl.createMint(
     connection,
@@ -48,10 +107,20 @@ async function createMintOnTestnet() {
     payer.publicKey,
     config.solanaTokenDecimals
   );
+  const metadata = await createMintMetadata({
+    web3: loadWeb3(),
+    payer,
+    connection,
+    mint,
+    name: String(project.title || "Tokenizas Project").slice(0, 32),
+    symbol: String(project.token_symbol || "TOK").slice(0, 10),
+    uri: `${config.siteUrl}/token-metadata/${project.slug || mint.toBase58()}.json`
+  });
   return {
     mintAddress: mint.toBase58(),
     authorityWallet: payer.publicKey.toBase58(),
-    treasuryWallet: payer.publicKey.toBase58()
+    treasuryWallet: payer.publicKey.toBase58(),
+    ...metadata
   };
 }
 

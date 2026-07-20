@@ -22,6 +22,7 @@ module.exports = {
   adminUser: process.env.ADMIN_USER || "admin",
   adminPassword: process.env.ADMIN_PASSWORD || "TokenizasAdmin2026!",
   sessionSecret: process.env.SESSION_SECRET || "change-this-tokenizas-secret",
+  siteUrl: (process.env.SITE_URL || "https://tokenizas.dominicana.com").replace(/\/+$/, ""),
   whatsappNumber: process.env.WHATSAPP_NUMBER || "18090000000",
   solanaCluster: process.env.SOLANA_CLUSTER || "devnet",
   solanaRpcUrl: process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",

@@ -64,6 +64,26 @@ function registerProjectRoutes(app) {
     }));
   });
 
+  app.get("/token-metadata/:slug.json", (req, res) => {
+    const project = store.get("SELECT * FROM projects WHERE slug = ?", [req.params.slug]);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+    const image = String(project.image_url || "").startsWith("http")
+      ? project.image_url
+      : `${req.protocol}://${req.get("host")}${project.image_url || "/tokenizas-dominicana-logo.png"}`;
+    res.json({
+      name: project.title,
+      symbol: project.token_symbol,
+      description: project.description,
+      image,
+      external_url: `${req.protocol}://${req.get("host")}/projects/${project.slug}`,
+      attributes: [
+        { trait_type: "Category", value: project.category || "asset" },
+        { trait_type: "Location", value: project.location },
+        { trait_type: "Target Raise", value: String(project.target_raise) }
+      ]
+    });
+  });
+
   app.get("/projects/:slug", (req, res) => {
     const project = localizeProject(store.get("SELECT * FROM projects WHERE slug = ?", [req.params.slug]), req);
     if (!project) return res.status(404).send(tr(req).projectPages.notFound);

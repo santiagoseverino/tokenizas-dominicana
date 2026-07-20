@@ -74,6 +74,13 @@ function registerDashboardRoutes(app) {
       WHERE tb.user_id = ?
       ORDER BY tb.updated_at DESC
     `, [user.id]).map((balance) => ({ ...balance, slug: balance.slug, title: balance.project_title })), req).map((balance) => ({ ...balance, project_title: balance.title }));
+    const marketplaceListings = localizeProjects(store.all(`
+      SELECT ml.*, p.slug, p.title, p.image_url
+      FROM marketplace_listings ml
+      JOIN projects p ON p.id = ml.project_id
+      WHERE ml.seller_user_id = ? AND ml.status = 'active'
+      ORDER BY ml.created_at DESC
+    `, [user.id]).map((item) => ({ ...item, title: item.title })), req).map((item) => ({ ...item, project_title: item.title }));
     const events = store.all(`
       SELECT te.*
       FROM token_events te
@@ -95,6 +102,10 @@ function registerDashboardRoutes(app) {
         ${req.query.canceled ? `<div class="success">${d.orderCanceled}</div>` : ""}
         ${req.query.payment === "received" ? `<div class="success">Pago confirmado on-chain. La orden ya esta lista para emitir tokens.</div>` : ""}
         ${req.query.payment === "failed" ? `<div class="alert">No se pudo confirmar el pago. Revisa la firma y que el monto haya llegado a la treasury.</div>` : ""}
+        ${req.query.marketplace === "listed" ? `<div class="success">Tokens listados en el marketplace.</div>` : ""}
+        ${req.query.marketplace === "canceled" ? `<div class="success">Listado cancelado.</div>` : ""}
+        ${req.query.marketplace === "bought" ? `<div class="success">Compra de marketplace completada en el balance interno.</div>` : ""}
+        ${req.query.marketplace === "invalid" ? `<div class="alert">No se pudo crear el listado. Revisa cantidad disponible y precio.</div>` : ""}
         <section class="metrics compact">
           <article><strong>${money.format(total)}</strong><span>${d.investedReserved}</span></article>
           <article><strong>${number.format(activeInvestments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
@@ -107,7 +118,7 @@ function registerDashboardRoutes(app) {
           </div>
           <div class="panel">
             <h3>${d.walletTokens}</h3>
-            ${balances.map((balance) => `<div class="event"><b>${balance.balance} ${balance.token_symbol}</b><span>${balance.project_title}</span><p>${d.issuedLocked}: ${balance.locked_balance}</p><span>Mint: ${balance.mint_address || d.pending}</span><span>${t.wallet}: ${balance.wallet_address}</span></div>`).join("")}
+            ${balances.map((balance) => `<div class="event"><b>${balance.balance} ${balance.token_symbol}</b><span>${balance.project_title}</span><p>${d.issuedLocked}: ${balance.locked_balance}</p><span>Mint: ${balance.mint_address || d.pending}</span><span>${t.wallet}: ${balance.wallet_address}</span><form class="inlineForm" method="post" action="/marketplace/listings"><input type="hidden" name="balance_id" value="${balance.id}" /><label>Cantidad<input name="quantity" type="number" min="0.001" step="0.001" max="${balance.balance}" placeholder="0.1" /></label><label>Precio/token USD<input name="price_per_token" type="number" min="0.01" step="0.01" placeholder="25.00" /></label><button class="button small" type="submit">Listar en marketplace</button></form></div>`).join("")}
             ${reservedTokens.map((item) => `<div class="event ${createdId === item.id ? "highlightBox" : ""}"><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${item.title}</span><p>${statusLabel(item.status, req)} - ${d.reservedPending}</p><span>${d.amount}: ${money.format(item.amount)}</span><span>${t.wallet}: ${d.pending}</span></div>`).join("")}
             ${!balances.length && !reservedTokens.length ? `<p class="muted">${d.empty}</p>` : ""}
           </div>
@@ -115,6 +126,10 @@ function registerDashboardRoutes(app) {
         <section class="panel">
           <h3>${d.operationReceipt}</h3>
           <div class="receiptList">${investments.map((item) => renderReceipt(item, events, req)).join("") || `<p class="muted">${d.empty}</p>`}</div>
+        </section>
+        <section class="panel">
+          <h3>Mis listados en marketplace</h3>
+          ${marketplaceListings.map((item) => `<div class="event"><b>${number.format(item.quantity)} ${item.token_symbol} - ${item.project_title}</b><span>${money.format(item.price_per_token)} por token - creado ${item.created_at}</span><p>Total listado: ${money.format(Number(item.quantity) * Number(item.price_per_token))}</p><form method="post" action="/marketplace/listings/${item.id}/cancel"><button class="button danger small" type="submit">Cancelar listado</button></form></div>`).join("") || `<p class="muted">No tienes tokens listados en venta.</p>`}
         </section>
       </main>
     `, req));

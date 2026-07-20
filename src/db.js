@@ -160,6 +160,33 @@ function migrate() {
       paid_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS marketplace_listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      seller_user_id INTEGER NOT NULL,
+      token_symbol TEXT NOT NULL,
+      quantity REAL NOT NULL,
+      price_per_token REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      canceled_at TEXT,
+      sold_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS marketplace_trades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_id INTEGER NOT NULL,
+      project_id INTEGER NOT NULL,
+      seller_user_id INTEGER NOT NULL,
+      buyer_user_id INTEGER NOT NULL,
+      token_symbol TEXT NOT NULL,
+      quantity REAL NOT NULL,
+      price_per_token REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'settled_internal',
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       actor TEXT NOT NULL,

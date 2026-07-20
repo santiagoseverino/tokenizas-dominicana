@@ -13,6 +13,7 @@ const registerInvestRoutes = require("./routes/invest");
 const registerInvestorRoutes = require("./routes/investor");
 const registerIssuerRoutes = require("./routes/issuer");
 const registerLegalRoutes = require("./routes/legal");
+const registerMarketplaceRoutes = require("./routes/marketplace");
 const registerProjectRoutes = require("./routes/projects");
 
 const app = express();
@@ -31,6 +32,7 @@ registerAuthRoutes(app);
 registerLegalRoutes(app);
 registerContactRoutes(app);
 registerProjectRoutes(app);
+registerMarketplaceRoutes(app);
 registerInvestorRoutes(app);
 registerIssuerRoutes(app);
 registerInvestRoutes(app);

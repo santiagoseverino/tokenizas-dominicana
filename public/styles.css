@@ -637,6 +637,17 @@ textarea {
 .event b, .event span { display: block; }
 .event span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .event p { margin: 7px 0 0; color: var(--muted); }
+.inlineForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 12px;
+}
+.inlineForm label {
+  margin: 0;
+  font-size: 12px;
+}
 .paymentBox {
   display: grid;
   gap: 8px;
@@ -759,7 +770,7 @@ textarea {
   .actions { margin-top: 22px; }
   .actions .button { width: 100%; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview, .verificationGrid { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview, .verificationGrid, .inlineForm { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
   .contactPage { padding-top: 0; }
   .contactIntro { padding: 36px 0; }

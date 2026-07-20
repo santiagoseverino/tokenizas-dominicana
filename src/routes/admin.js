@@ -4,6 +4,7 @@ const store = require("../db");
 const { getAdminCredentials, hashPassword, requireAdmin, verifyPassword } = require("../middleware/auth");
 const { toCsv } = require("../lib/csv");
 const { tr } = require("../lib/i18n");
+const { parseMultipart } = require("../lib/multipart");
 const { layout, money, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 
@@ -26,57 +27,6 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
-}
-
-function parseMultipart(req) {
-  return new Promise((resolve, reject) => {
-    const type = req.headers["content-type"] || "";
-    const match = type.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-    if (!match) return resolve({ fields: req.body || {}, files: {} });
-    const boundary = Buffer.from(`--${match[1] || match[2]}`);
-    const chunks = [];
-    let size = 0;
-    req.on("data", (chunk) => {
-      size += chunk.length;
-      if (size > 8 * 1024 * 1024) {
-        reject(new Error("La imagen no puede pasar de 8 MB."));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on("error", reject);
-    req.on("end", () => {
-      const buffer = Buffer.concat(chunks);
-      const fields = {};
-      const files = {};
-      let start = buffer.indexOf(boundary);
-      while (start !== -1) {
-        const next = buffer.indexOf(boundary, start + boundary.length);
-        if (next === -1) break;
-        let part = buffer.slice(start + boundary.length + 2, next - 2);
-        const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
-        if (headerEnd !== -1) {
-          const rawHeaders = part.slice(0, headerEnd).toString("utf8");
-          const content = part.slice(headerEnd + 4);
-          const nameMatch = rawHeaders.match(/name="([^"]+)"/);
-          const fileMatch = rawHeaders.match(/filename="([^"]*)"/);
-          const typeMatch = rawHeaders.match(/content-type:\s*([^\r\n]+)/i);
-          if (nameMatch && fileMatch && fileMatch[1]) {
-            files[nameMatch[1]] = {
-              filename: fileMatch[1],
-              contentType: typeMatch ? typeMatch[1].trim().toLowerCase() : "",
-              buffer: content
-            };
-          } else if (nameMatch) {
-            fields[nameMatch[1]] = content.toString("utf8");
-          }
-        }
-        start = next;
-      }
-      resolve({ fields, files });
-    });
-  });
 }
 
 async function readForm(req) {
@@ -192,6 +142,7 @@ function registerAdminRoutes(app) {
           </div>
           <div class="adminActions">
             <a class="button primary small" href="/admin/projects/new">Nuevo proyecto</a>
+            <a class="button small" href="/admin/kyc">KYC</a>
             <a class="button small" href="/admin/tokenization">Tokenizacion</a>
             <a class="button small" href="/admin/settings">Seguridad</a>
             <a class="button danger small" href="/logout">${t.logout}</a>
@@ -411,6 +362,103 @@ function registerAdminRoutes(app) {
     });
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_project", payload.title, payload.slug, new Date().toISOString()]);
     res.redirect(`/admin/projects/${project.id}`);
+  });
+
+  app.get("/admin/kyc", requireAdmin, (req, res) => {
+    const investors = store.all(`
+      SELECT u.*, COUNT(k.id) document_count
+      FROM users u
+      LEFT JOIN kyc_documents k ON k.user_id = u.id
+      WHERE u.role = 'investor'
+      GROUP BY u.id
+      ORDER BY CASE u.kyc_status WHEN 'submitted' THEN 1 WHEN 'needs_more_info' THEN 2 WHEN 'approved' THEN 3 ELSE 4 END, u.id DESC
+    `);
+    res.send(layout("KYC", `
+      <main class="page adminPage">
+        <div class="adminHero">
+          <div><p class="eyebrow">Compliance</p><h1>KYC / AML</h1><p class="muted">Revision de inversionistas, documentos y estados de cumplimiento.</p></div>
+          <div class="adminActions"><a class="button small" href="/admin">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+        </div>
+        <div class="panel adminPanel tablePanel">
+          <table class="dataTable">
+            <thead><tr><th>Inversionista</th><th>Email</th><th>Pais</th><th>Wallet</th><th>KYC</th><th>Docs</th><th></th></tr></thead>
+            <tbody>
+              ${investors.map((user) => `<tr><td>${user.name}</td><td>${user.email}</td><td>${user.country}</td><td>${user.wallet || "pendiente"}</td><td>${statusLabel(user.kyc_status)}</td><td>${user.document_count}</td><td><a href="/admin/kyc/${user.id}">Revisar</a></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    `, req));
+  });
+
+  app.get("/admin/kyc/:id", requireAdmin, (req, res) => {
+    const user = store.get("SELECT * FROM users WHERE id = ? AND role = 'investor'", [req.params.id]);
+    if (!user) return res.status(404).send("Inversionista no encontrado");
+    const docs = store.all("SELECT * FROM kyc_documents WHERE user_id = ? ORDER BY uploaded_at DESC", [user.id]);
+    const investments = store.all(`
+      SELECT i.*, p.title, p.token_symbol
+      FROM investments i JOIN projects p ON p.id = i.project_id
+      WHERE i.user_id = ?
+      ORDER BY i.id DESC
+    `, [user.id]);
+    res.send(layout(`KYC ${user.name}`, `
+      <main class="page adminPage">
+        <div class="adminHero">
+          <div><p class="eyebrow">Expediente KYC</p><h1>${user.name}</h1><p class="muted">${user.email} - ${user.country} - ${statusLabel(user.kyc_status)}</p></div>
+          <div class="adminActions"><a class="button small" href="/admin/kyc">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+        </div>
+        <section class="split">
+          <form class="panel contactForm adminPanel" method="post" action="/admin/kyc/${user.id}">
+            <h3>Decision de cumplimiento</h3>
+            <label>Estado KYC<select name="kyc_status">
+              ${["not_started", "submitted", "needs_more_info", "approved", "rejected"].map((status) => `<option value="${status}" ${user.kyc_status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
+            </select></label>
+            <label>Nota interna<textarea name="notes" rows="5" placeholder="Observaciones, documentos faltantes o razon de aprobacion/rechazo."></textarea></label>
+            <button class="button primary" type="submit">Guardar decision</button>
+          </form>
+          <div class="panel adminPanel">
+            <h3>Ordenes del inversionista</h3>
+            ${investments.map((item) => `<div class="event"><b>${item.title}</b><span>${money.format(item.amount)} - ${item.tokens} ${item.token_symbol}</span><p>${statusLabel(item.status)}${item.investor_note ? ` - ${item.investor_note}` : ""}</p></div>`).join("") || "<p class=\"muted\">Sin ordenes.</p>"}
+          </div>
+        </section>
+        <div class="panel adminPanel tablePanel">
+          <h3>Documentos</h3>
+          <table class="dataTable">
+            <thead><tr><th>Tipo</th><th>Archivo</th><th>Estado</th><th>Subido</th><th></th></tr></thead>
+            <tbody>
+              ${docs.map((doc) => `<tr><td>${doc.document_type}</td><td>${doc.original_name}</td><td>${statusLabel(doc.status)}</td><td>${doc.uploaded_at}</td><td><a href="/admin/kyc/documents/${doc.id}/download">Descargar</a></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/kyc/:id", requireAdmin, (req, res) => {
+    const user = store.get("SELECT * FROM users WHERE id = ? AND role = 'investor'", [req.params.id]);
+    if (!user) return res.status(404).send("Inversionista no encontrado");
+    const allowed = new Set(["not_started", "submitted", "needs_more_info", "approved", "rejected"]);
+    const status = allowed.has(req.body.kyc_status) ? req.body.kyc_status : user.kyc_status;
+    store.run("UPDATE users SET kyc_status = ? WHERE id = ?", [status, user.id]);
+    store.run("UPDATE kyc_documents SET status = ?, notes = ?, reviewed_at = ? WHERE user_id = ?", [
+      status === "approved" ? "approved" : status === "rejected" ? "rejected" : "submitted",
+      req.body.notes || "",
+      new Date().toISOString(),
+      user.id
+    ]);
+    if (status === "approved") {
+      store.run("UPDATE investments SET status = 'pending_payment' WHERE user_id = ? AND status = 'compliance_review'", [user.id]);
+    }
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'reviewed_kyc', ?, ?, ?)", ["Admin", user.email, `${status}: ${req.body.notes || ""}`, new Date().toISOString()]);
+    res.redirect(`/admin/kyc/${user.id}`);
+  });
+
+  app.get("/admin/kyc/documents/:id/download", requireAdmin, (req, res) => {
+    const doc = store.get("SELECT * FROM kyc_documents WHERE id = ?", [req.params.id]);
+    if (!doc) return res.status(404).send("Documento no encontrado");
+    const absolutePath = path.join(__dirname, "..", "..", "private", doc.file_path.replace(/^\/kyc\//, "kyc/"));
+    if (!fs.existsSync(absolutePath)) return res.status(404).send("Archivo no encontrado");
+    res.download(absolutePath, doc.original_name);
   });
 
   app.get("/admin/tokenization", requireAdmin, (req, res) => {

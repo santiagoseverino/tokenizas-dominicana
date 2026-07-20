@@ -1,4 +1,5 @@
 const store = require("../db");
+const { currentInvestor } = require("../middleware/auth");
 const { layout, money, statusLabel } = require("../lib/ui");
 
 function registerInvestRoutes(app) {
@@ -14,12 +15,14 @@ function registerInvestRoutes(app) {
     res.send(layout("Invertir", `
       <main class="page">
         <div class="sectionHead"><p class="eyebrow">Orden de prueba</p><h1>Crear una inversion tokenizada</h1><p class="muted">Selecciona un proyecto, monto y metodo de pago. Esta pantalla simula la reserva y emision operativa para pruebas.</p></div>
+        ${currentInvestor(req) ? "" : `<div class="alert">Para crear una orden necesitas una cuenta de inversionista. <a href="/investor/register">Crear cuenta</a> o <a href="/investor/login">entrar</a>.</div>`}
         <section class="investPage">
           <form class="panel investPanel" method="post" action="/invest">
             <h2>Nueva orden</h2>
             <label>Proyecto<select name="project_id">${projects.map((project) => `<option value="${project.id}" ${defaultProject && defaultProject.id === project.id ? "selected" : ""}>${project.title} - ${project.token_symbol}</option>`).join("")}</select></label>
             <label>Monto a invertir<input name="amount" type="number" min="100" step="100" value="${defaultProject ? defaultProject.min_investment : 1000}" /></label>
             <label>Metodo de pago<select name="payment_method"><option>USDC Solana</option><option>Transferencia bancaria</option></select></label>
+            <label>Nota para cumplimiento<textarea name="investor_note" rows="4" placeholder="Origen estimado de fondos, objetivo de inversion o comentario para el equipo."></textarea></label>
             <button class="button primary" type="submit">Crear orden</button>
           </form>
           <div class="panel">
@@ -35,13 +38,14 @@ function registerInvestRoutes(app) {
   });
 
   app.post("/invest", (req, res) => {
+    const user = currentInvestor(req);
+    if (!user) return res.redirect("/investor/login");
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.body.project_id]);
     const amount = Number(req.body.amount || 0);
     if (!project || amount < project.min_investment) return res.status(400).send("Orden invalida");
-    const user = store.get("SELECT * FROM users WHERE email = ?", ["maria@demo.do"]) || store.get("SELECT * FROM users WHERE role = 'investor' ORDER BY id LIMIT 1");
-    if (!user) return res.status(400).send("No hay inversionista demo configurado. Ejecuta npm run seed.");
     const tokens = Math.floor(amount / project.token_price);
-    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending_payment', ?)", [user.id, project.id, amount, tokens, req.body.payment_method, new Date().toISOString()]);
+    const status = user.kyc_status === "approved" ? "pending_payment" : "compliance_review";
+    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, investor_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [user.id, project.id, amount, tokens, req.body.payment_method, status, req.body.investor_note || "", new Date().toISOString()]);
     const investment = store.get("SELECT id FROM investments WHERE user_id = ? AND project_id = ? ORDER BY id DESC LIMIT 1", [user.id, project.id]);
     store.run("UPDATE offerings SET raised = raised + ? WHERE project_id = ?", [amount, project.id]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "created_order", project.title, `${tokens} tokens reservados por ${money.format(amount)}.`, new Date().toISOString()]);

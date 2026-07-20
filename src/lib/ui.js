@@ -36,7 +36,7 @@ function layout(title, body, req) {
           </div>
           <a href="/marketplace">Marketplace</a>
           <a href="/invest">${t.invest}</a>
-          <a href="/dashboard">${t.dashboard}</a>
+          <a href="/investor">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>
           <a href="/contact">${t.contact}</a>
         </nav>

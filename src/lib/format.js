@@ -13,7 +13,12 @@ function statusLabel(status) {
     funded: "Financiado",
     tokens_issued: "Tokens emitidos",
     compliance_review: "Revision compliance",
-    pending_payment: "Pago pendiente"
+    pending_payment: "Pago pendiente",
+    approved: "Aprobado",
+    rejected: "Rechazado",
+    submitted: "Enviado",
+    needs_more_info: "Falta informacion",
+    not_started: "No iniciado"
   };
   return labels[status] || status;
 }

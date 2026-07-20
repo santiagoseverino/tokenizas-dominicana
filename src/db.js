@@ -33,6 +33,7 @@ function migrate() {
       country TEXT NOT NULL,
       kyc_status TEXT NOT NULL,
       wallet TEXT,
+      password_hash TEXT,
       created_at TEXT NOT NULL
     );
 
@@ -174,10 +175,31 @@ function migrate() {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS kyc_documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      document_type TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'submitted',
+      notes TEXT,
+      uploaded_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);
   const projectColumns = all("PRAGMA table_info(projects)").map((column) => column.name);
+  const userColumns = all("PRAGMA table_info(users)").map((column) => column.name);
+  const investmentColumns = all("PRAGMA table_info(investments)").map((column) => column.name);
+  if (!userColumns.includes("password_hash")) {
+    db.run("ALTER TABLE users ADD COLUMN password_hash TEXT");
+  }
+  if (!investmentColumns.includes("investor_note")) {
+    db.run("ALTER TABLE investments ADD COLUMN investor_note TEXT");
+  }
   if (!projectColumns.includes("category")) {
     db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");
     db.run("UPDATE projects SET category = 'agriculture' WHERE slug = 'finca-cacao-bayaguana'");

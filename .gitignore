@@ -1,6 +1,7 @@
 node_modules/
 data/*.sqlite
 data/*.sqlite-*
+private/
 *.log
 server.err
 server.log

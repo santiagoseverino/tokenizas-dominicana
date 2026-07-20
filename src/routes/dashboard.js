@@ -1,10 +1,11 @@
 const store = require("../db");
+const { currentInvestor } = require("../middleware/auth");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 
 function registerDashboardRoutes(app) {
   app.get("/dashboard", (req, res) => {
-    const user = store.get("SELECT * FROM users WHERE email = ?", ["maria@demo.do"]) || store.get("SELECT * FROM users WHERE role = 'investor' ORDER BY id LIMIT 1");
-    if (!user) return res.status(404).send("Inversionista demo no encontrado");
+    const user = currentInvestor(req);
+    if (!user) return res.redirect("/investor/login");
     const investments = store.all(`
       SELECT i.*, p.title, p.token_symbol, p.image_url, p.location
       FROM investments i JOIN projects p ON p.id = i.project_id

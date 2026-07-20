@@ -33,6 +33,11 @@ function sessionCookieValue() {
   return `${payload}.${signSession(payload)}`;
 }
 
+function investorSessionCookieValue(user) {
+  const payload = `investor:${user.id}:${Date.now()}`;
+  return `${payload}.${signSession(payload)}`;
+}
+
 function isAdmin(req) {
   const token = req.cookies.tokenizas_admin;
   if (!token) return false;
@@ -48,9 +53,32 @@ function isAdmin(req) {
   return user === getAdminCredentials().user && ageMs > 0 && ageMs < 1000 * 60 * 60 * 12;
 }
 
+function currentInvestor(req) {
+  const token = req.cookies.tokenizas_investor;
+  if (!token) return null;
+  const separator = token.lastIndexOf(".");
+  if (separator === -1) return null;
+  const payload = token.slice(0, separator);
+  const signature = token.slice(separator + 1);
+  const expectedSignature = signSession(payload);
+  if (signature.length !== expectedSignature.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) return null;
+  const [scope, userId, issuedAt] = payload.split(":");
+  const ageMs = Date.now() - Number(issuedAt);
+  if (scope !== "investor" || ageMs <= 0 || ageMs > 1000 * 60 * 60 * 24 * 7) return null;
+  return store.get("SELECT * FROM users WHERE id = ? AND role = 'investor'", [Number(userId)]);
+}
+
+function requireInvestor(req, res, next) {
+  const investor = currentInvestor(req);
+  if (!investor) return res.redirect("/investor/login");
+  req.investor = investor;
+  next();
+}
+
 function requireAdmin(req, res, next) {
   if (isAdmin(req)) return next();
   res.redirect("/login");
 }
 
-module.exports = { getAdminCredentials, hashPassword, isAdmin, requireAdmin, sessionCookieValue, verifyPassword };
+module.exports = { currentInvestor, getAdminCredentials, hashPassword, investorSessionCookieValue, isAdmin, requireAdmin, requireInvestor, sessionCookieValue, verifyPassword };

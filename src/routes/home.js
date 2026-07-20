@@ -30,6 +30,9 @@ function registerHomeRoutes(app) {
             <p class="eyebrow">${t.heroEyebrow}</p>
             <h1 class="homeHeroTitle">${t.heroTitle}</h1>
             <p class="lead">${t.heroLead}</p>
+            <div class="heroCategoryChips" aria-label="${t.projects}">
+              ${["real-estate", "agriculture", "music", "art", "tourism", "business"].map((category) => `<a href="/projects?category=${category}">${t.categoryLabels[category]}</a>`).join("")}
+            </div>
             <div class="actions">
               <a class="button primary" href="/projects">${t.viewProjects}</a>
               <a class="button ghost" href="/invest">${t.createOrder}</a>

@@ -154,6 +154,26 @@ h3 { font-size: 21px; }
   line-height: 1.08;
 }
 .lead { font-size: 20px; line-height: 1.55; max-width: 700px; }
+.heroCategoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 720px;
+  margin-top: 22px;
+}
+.heroCategoryChips a {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,.34);
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  color: white;
+  font-size: 13px;
+  font-weight: 850;
+  backdrop-filter: blur(10px);
+}
+.heroCategoryChips a:hover {
+  background: rgba(255,255,255,.24);
+}
 .actions { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
 .button {
   border: 1px solid var(--line);
@@ -587,6 +607,12 @@ textarea {
   .langSwitch { align-self: stretch; justify-content: space-between; }
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
+  .homeHeroTitle { font-size: 34px; max-width: 100%; }
+  .lead { font-size: 17px; line-height: 1.5; }
+  .heroCategoryChips { gap: 8px; margin-top: 18px; }
+  .heroCategoryChips a { font-size: 12px; padding: 7px 10px; }
+  .actions { margin-top: 22px; }
+  .actions .button { width: 100%; }
   h1 { font-size: 42px; }
   .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }

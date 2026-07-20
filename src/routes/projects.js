@@ -2,13 +2,13 @@ const store = require("../db");
 const { fact, layout, money, number, projectCard, statusLabel } = require("../lib/ui");
 
 const categoryFilters = {
-  "real-estate": { title: "Bienes raices", slugs: ["punta-cana-villas", "santo-domingo-torre"], patterns: ["renta corta", "residencial", "torre", "villas"] },
-  agriculture: { title: "Agricultura", slugs: ["finca-cacao-bayaguana"], patterns: ["agro", "cacao", "finca", "agricola"] },
-  art: { title: "Arte", patterns: ["arte", "galeria", "coleccion"] },
-  music: { title: "Musica", slugs: ["lionel-the-star-entertainment"], patterns: ["musica", "royalties", "catalogo"] },
-  tourism: { title: "Turismo", slugs: ["samana-eco-hotel", "punta-cana-villas"], patterns: ["turistica", "hotel", "hospitality", "eco"] },
-  business: { title: "Negocios", patterns: ["negocio", "pyme", "empresa"] },
-  energy: { title: "Energia", patterns: ["energia", "solar", "renovable"] }
+  "real-estate": { title: "Bienes raices", pageTitle: "Proyectos inmobiliarios", slugs: ["punta-cana-villas", "santo-domingo-torre"], patterns: ["renta corta", "residencial", "torre", "villas"] },
+  agriculture: { title: "Agricultura", pageTitle: "Proyectos de agricultura", slugs: ["finca-cacao-bayaguana"], patterns: ["agro", "cacao", "finca", "agricola"] },
+  art: { title: "Arte", pageTitle: "Proyectos de arte", patterns: ["arte", "galeria", "coleccion"] },
+  music: { title: "Musica", pageTitle: "Proyectos de musica", slugs: ["lionel-the-star-entertainment"], patterns: ["musica", "royalties", "catalogo"] },
+  tourism: { title: "Turismo", pageTitle: "Proyectos de turismo", slugs: ["samana-eco-hotel", "punta-cana-villas"], patterns: ["turistica", "hotel", "hospitality", "eco"] },
+  business: { title: "Negocios", pageTitle: "Proyectos de negocios", patterns: ["negocio", "pyme", "empresa"] },
+  energy: { title: "Energia", pageTitle: "Proyectos de energia", patterns: ["energia", "solar", "renovable"] }
 };
 
 function projectMatchesCategory(project, category) {
@@ -34,10 +34,11 @@ function renderProjectGridPage(req, { title, eyebrow, subtitle, projects }) {
 function registerProjectRoutes(app) {
   app.get("/projects", (req, res) => {
     const category = String(req.query.category || "");
-    const categoryTitle = categoryFilters[category] ? categoryFilters[category].title : "Todos";
+    const selectedCategory = categoryFilters[category];
+    const categoryTitle = selectedCategory ? selectedCategory.title : "Todos";
     const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC").filter((project) => projectMatchesCategory(project, category));
     res.send(renderProjectGridPage(req, {
-      title: category === "agriculture" ? "Proyectos de agricultura" : category === "real-estate" ? "Proyectos inmobiliarios" : "Proyectos tokenizables",
+      title: selectedCategory ? selectedCategory.pageTitle : "Proyectos tokenizables",
       eyebrow: "Marketplace primario",
       subtitle: `Categoria: ${categoryTitle}`,
       projects

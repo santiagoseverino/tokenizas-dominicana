@@ -23,8 +23,9 @@ function registerDashboardRoutes(app) {
       ORDER BY tb.updated_at DESC
     `, [user.id]).map((balance) => ({ ...balance, slug: balance.slug, title: balance.project_title })), req).map((balance) => ({ ...balance, project_title: balance.title }));
     const balanceProjectIds = new Set(balances.map((balance) => Number(balance.project_id)));
-    const reservedTokens = investments.filter((item) => item.status !== "tokens_issued" || !balanceProjectIds.has(Number(item.project_id)));
-    const total = investments.reduce((sum, item) => sum + item.amount, 0);
+    const reservedTokens = investments.filter((item) => item.status !== "canceled" && (item.status !== "tokens_issued" || !balanceProjectIds.has(Number(item.project_id))));
+    const activeInvestments = investments.filter((item) => item.status !== "canceled");
+    const total = activeInvestments.reduce((sum, item) => sum + item.amount, 0);
     const createdId = Number(req.query.created || 0);
     const t = tr(req);
     const d = t.dashboardText;
@@ -32,15 +33,16 @@ function registerDashboardRoutes(app) {
       <main class="page">
         <div class="sectionHead"><p class="eyebrow">${d.investor}</p><h1>${user.name}</h1><p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - ${t.wallet}: ${user.wallet}</p></div>
         ${createdId ? `<div class="success">${d.orderCreated}</div>` : ""}
+        ${req.query.canceled ? `<div class="success">${d.orderCanceled}</div>` : ""}
         <section class="metrics compact">
           <article><strong>${money.format(total)}</strong><span>${d.investedReserved}</span></article>
-          <article><strong>${number.format(investments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
-          <article><strong>${investments.length}</strong><span>${d.orders}</span></article>
+          <article><strong>${number.format(activeInvestments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
+          <article><strong>${activeInvestments.length}</strong><span>${d.orders}</span></article>
         </section>
         <section class="split">
           <div class="panel">
             <h3>${d.orders}</h3>
-            <div class="portfolio">${investments.map((item) => `<article class="holding ${createdId === item.id ? "highlight" : ""}"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p></div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("")}</div>
+            <div class="portfolio">${investments.map((item) => `<article class="holding ${createdId === item.id ? "highlight" : ""}"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p>${item.status !== "tokens_issued" && item.status !== "canceled" ? `<form method="post" action="/investments/${item.id}/cancel"><button class="button danger small" type="submit">${d.cancelOrder}</button></form>` : ""}</div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("")}</div>
           </div>
           <div class="panel">
             <h3>${d.walletTokens}</h3>
@@ -51,6 +53,17 @@ function registerDashboardRoutes(app) {
         </section>
       </main>
     `, req));
+  });
+
+  app.post("/investments/:id/cancel", (req, res) => {
+    const user = currentInvestor(req);
+    if (!user) return res.redirect("/investor/login");
+    const investment = store.get("SELECT * FROM investments WHERE id = ? AND user_id = ?", [req.params.id, user.id]);
+    if (!investment || investment.status === "tokens_issued") return res.redirect("/dashboard");
+    store.run("UPDATE investments SET status = 'canceled' WHERE id = ?", [investment.id]);
+    store.run("UPDATE offerings SET raised = MAX(0, raised - ?) WHERE project_id = ?", [investment.amount, investment.project_id]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "canceled_order", `investment:${investment.id}`, `${money.format(investment.amount)} canceled.`, new Date().toISOString()]);
+    res.redirect("/dashboard?canceled=1");
   });
 }
 

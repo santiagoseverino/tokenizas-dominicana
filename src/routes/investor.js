@@ -78,6 +78,8 @@ function renderPortal(req, message = "") {
   const docTypes = documentTypes(req);
   const requiredTypes = new Set(docTypes.map((item) => item[0]));
   docs.forEach((doc) => requiredTypes.delete(doc.document_type));
+  const d = tr(req).dashboardText;
+  const activeInvestments = investments.filter((item) => item.status !== "canceled");
   return layout(t.portal, `
     <main class="page investorPage">
       <div class="adminHero">
@@ -93,15 +95,16 @@ function renderPortal(req, message = "") {
         </div>
       </div>
       ${message ? `<div class="success">${message}</div>` : ""}
+      ${req.query.canceled ? `<div class="success">${d.orderCanceled}</div>` : ""}
       <section class="metrics compact">
-        <article><strong>${money.format(investments.reduce((sum, item) => sum + item.amount, 0))}</strong><span>${t.reserved}</span></article>
-        <article><strong>${number.format(investments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
+        <article><strong>${money.format(activeInvestments.reduce((sum, item) => sum + item.amount, 0))}</strong><span>${t.reserved}</span></article>
+        <article><strong>${number.format(activeInvestments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
         <article><strong>${docs.length}/5</strong><span>${t.kycDocuments}</span></article>
       </section>
       <section class="split">
         <div class="panel adminPanel">
           <h3>${t.myOrders}</h3>
-          <div class="portfolio">${investments.map((item) => `<article class="holding"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p></div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("") || `<p class="muted">${t.noOrders}</p>`}</div>
+          <div class="portfolio">${investments.map((item) => `<article class="holding"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p>${item.status !== "tokens_issued" && item.status !== "canceled" ? `<form method="post" action="/investments/${item.id}/cancel"><button class="button danger small" type="submit">${d.cancelOrder}</button></form>` : ""}</div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("") || `<p class="muted">${t.noOrders}</p>`}</div>
         </div>
         <div class="panel adminPanel">
           <h3>KYC</h3>

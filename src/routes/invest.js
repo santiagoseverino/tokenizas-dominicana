@@ -2,6 +2,7 @@ const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
 const { tr } = require("../lib/i18n");
 const { localizeProjects } = require("../lib/project-content");
+const { getSolPaymentExpected } = require("../lib/solana");
 const { layout, money, statusLabel } = require("../lib/ui");
 
 function formatTokenInput(project) {
@@ -71,7 +72,8 @@ function registerInvestRoutes(app) {
     const amount = project ? Number((tokens * project.token_price).toFixed(6)) : 0;
     if (!project || !Number.isFinite(tokens) || tokens < 0.001 || amount <= 0) return res.status(400).send(tr(req).invalidOrder || "Invalid order");
     const status = user.kyc_status === "approved" ? "pending_payment" : "compliance_review";
-    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, investor_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [user.id, project.id, amount, tokens, req.body.payment_method, status, req.body.investor_note || "", new Date().toISOString()]);
+    const expectedSol = getSolPaymentExpected(tokens);
+    store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, payment_status, payment_expected_sol, investor_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [user.id, project.id, amount, tokens, req.body.payment_method, status, "pending", expectedSol, req.body.investor_note || "", new Date().toISOString()]);
     const investment = store.get("SELECT id FROM investments WHERE user_id = ? AND project_id = ? ORDER BY id DESC LIMIT 1", [user.id, project.id]);
     store.run("UPDATE offerings SET raised = raised + ? WHERE project_id = ?", [amount, project.id]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "created_order", project.title, `${tokens} ${tr(req).auditCreatedOrder || "tokens reserved for"} ${money.format(amount)}.`, new Date().toISOString()]);

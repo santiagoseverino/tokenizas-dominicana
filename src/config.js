@@ -27,5 +27,6 @@ module.exports = {
   solanaCluster: process.env.SOLANA_CLUSTER || "devnet",
   solanaRpcUrl: process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
   solanaPayerSecretKey: process.env.SOLANA_PAYER_SECRET_KEY || "",
-  solanaTokenDecimals: Number(process.env.SOLANA_TOKEN_DECIMALS || 6)
+  solanaTokenDecimals: Number(process.env.SOLANA_TOKEN_DECIMALS || 6),
+  solanaPaymentSolPerToken: Number(process.env.SOLANA_PAYMENT_SOL_PER_TOKEN || 0.001)
 };

@@ -50,6 +50,50 @@ async function loadSolana() {
   return { web3, spl, payer, connection };
 }
 
+function getSolPaymentExpected(tokens) {
+  return Number((Number(tokens || 0) * config.solanaPaymentSolPerToken).toFixed(9));
+}
+
+function lamportsFromSol(sol) {
+  return Math.round(Number(sol || 0) * 1_000_000_000);
+}
+
+function getTreasuryAddress() {
+  const web3 = loadWeb3();
+  const secretKey = parseSecretKey(config.solanaPayerSecretKey);
+  if (!secretKey) return "";
+  return web3.Keypair.fromSecretKey(secretKey).publicKey.toBase58();
+}
+
+async function verifySolPayment({ signature, expectedSol, treasuryAddress }) {
+  const web3 = loadWeb3();
+  const connection = new web3.Connection(config.solanaRpcUrl, "confirmed");
+  const expectedLamports = lamportsFromSol(expectedSol);
+  if (!signature || !looksLikeSignature(signature)) throw new Error("Firma de Solana invalida.");
+  if (expectedLamports <= 0) throw new Error("Monto esperado invalido.");
+  const tx = await connection.getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  if (!tx || !tx.meta) throw new Error("No se encontro la transaccion en Solana devnet.");
+  const keys = tx.transaction.message.staticAccountKeys || tx.transaction.message.accountKeys || [];
+  const treasuryIndex = keys.findIndex((key) => key.toBase58 && key.toBase58() === treasuryAddress);
+  if (treasuryIndex < 0) throw new Error("La transaccion no incluye la wallet treasury.");
+  const pre = Number(tx.meta.preBalances[treasuryIndex] || 0);
+  const post = Number(tx.meta.postBalances[treasuryIndex] || 0);
+  const receivedLamports = post - pre;
+  if (receivedLamports < expectedLamports) {
+    throw new Error(`Pago insuficiente. Recibido ${(receivedLamports / 1_000_000_000).toFixed(9)} SOL, esperado ${Number(expectedSol).toFixed(9)} SOL.`);
+  }
+  return {
+    signature,
+    treasuryAddress,
+    expectedSol,
+    receivedSol: receivedLamports / 1_000_000_000
+  };
+}
+
+function looksLikeSignature(signature) {
+  return /^[1-9A-HJ-NP-Za-km-z]{64,100}$/.test(String(signature || ""));
+}
+
 function encodeU32(value) {
   const buffer = Buffer.alloc(4);
   buffer.writeUInt32LE(value);
@@ -208,7 +252,10 @@ function isValidSolanaAddress(address) {
 module.exports = {
   createDemoWalletAddress,
   createMintOnTestnet,
+  getSolPaymentExpected,
+  getTreasuryAddress,
   isValidSolanaAddress,
   isRealSolanaEnabled,
-  mintTokensOnTestnet
+  mintTokensOnTestnet,
+  verifySolPayment
 };

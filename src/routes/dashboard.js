@@ -1,8 +1,25 @@
 const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
 const { localizeProjects } = require("../lib/project-content");
+const { getSolPaymentExpected, getTreasuryAddress, verifySolPayment } = require("../lib/solana");
 const { tr } = require("../lib/i18n");
 const { layout, money, number, statusLabel } = require("../lib/ui");
+
+function renderPaymentBox(item, req) {
+  if (item.status !== "pending_payment" && item.status !== "payment_failed") return "";
+  const expectedSol = item.payment_expected_sol || getSolPaymentExpected(item.tokens);
+  const treasury = getTreasuryAddress();
+  return `<div class="paymentBox">
+    <b>Pago Solana devnet</b>
+    <span>Envia exactamente o mas de ${number.format(expectedSol)} SOL devnet a:</span>
+    <span class="monoBreak">${treasury || "Treasury no configurada"}</span>
+    <span>Referencia: orden #${item.id}</span>
+    <form method="post" action="/investments/${item.id}/sol-payment">
+      <label>Firma de transaccion<input name="signature" placeholder="Pega aqui la firma de Solana" value="${item.payment_signature || ""}" required /></label>
+      <button class="button small primary" type="submit">Verificar pago on-chain</button>
+    </form>
+  </div>`;
+}
 
 function registerDashboardRoutes(app) {
   app.get("/dashboard", (req, res) => {
@@ -34,6 +51,8 @@ function registerDashboardRoutes(app) {
         <div class="sectionHead"><p class="eyebrow">${d.investor}</p><h1>${user.name}</h1><p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - ${t.wallet}: ${user.wallet}</p></div>
         ${createdId ? `<div class="success">${d.orderCreated}</div>` : ""}
         ${req.query.canceled ? `<div class="success">${d.orderCanceled}</div>` : ""}
+        ${req.query.payment === "received" ? `<div class="success">Pago confirmado on-chain. La orden ya esta lista para emitir tokens.</div>` : ""}
+        ${req.query.payment === "failed" ? `<div class="alert">No se pudo confirmar el pago. Revisa la firma y que el monto haya llegado a la treasury.</div>` : ""}
         <section class="metrics compact">
           <article><strong>${money.format(total)}</strong><span>${d.investedReserved}</span></article>
           <article><strong>${number.format(activeInvestments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
@@ -42,7 +61,7 @@ function registerDashboardRoutes(app) {
         <section class="split">
           <div class="panel">
             <h3>${d.orders}</h3>
-            <div class="portfolio">${investments.map((item) => `<article class="holding ${createdId === item.id ? "highlight" : ""}"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p>${item.status !== "tokens_issued" && item.status !== "canceled" ? `<form method="post" action="/investments/${item.id}/cancel"><button class="button danger small" type="submit">${d.cancelOrder}</button></form>` : ""}</div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("")}</div>
+            <div class="portfolio">${investments.map((item) => `<article class="holding ${createdId === item.id ? "highlight" : ""}"><img src="${item.image_url}" alt="${item.title}" /><div><h3>${item.title}</h3><p>${item.location}</p>${renderPaymentBox(item, req)}${item.status !== "tokens_issued" && item.status !== "canceled" ? `<form method="post" action="/investments/${item.id}/cancel"><button class="button danger small" type="submit">${d.cancelOrder}</button></form>` : ""}</div><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${money.format(item.amount)}</span><em>${statusLabel(item.status, req)}</em></article>`).join("")}</div>
           </div>
           <div class="panel">
             <h3>${d.walletTokens}</h3>
@@ -64,6 +83,41 @@ function registerDashboardRoutes(app) {
     store.run("UPDATE offerings SET raised = MAX(0, raised - ?) WHERE project_id = ?", [investment.amount, investment.project_id]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "canceled_order", `investment:${investment.id}`, `${money.format(investment.amount)} canceled.`, new Date().toISOString()]);
     res.redirect("/dashboard?canceled=1");
+  });
+
+  app.post("/investments/:id/sol-payment", async (req, res) => {
+    const user = currentInvestor(req);
+    if (!user) return res.redirect("/investor/login");
+    const investment = store.get("SELECT * FROM investments WHERE id = ? AND user_id = ?", [req.params.id, user.id]);
+    if (!investment || !["pending_payment", "payment_failed"].includes(investment.status)) return res.redirect("/dashboard");
+    const signature = String(req.body.signature || "").trim();
+    const expectedSol = investment.payment_expected_sol || getSolPaymentExpected(investment.tokens);
+    const treasuryAddress = getTreasuryAddress();
+    try {
+      const result = await verifySolPayment({ signature, expectedSol, treasuryAddress });
+      store.run("UPDATE investments SET status = 'payment_received', payment_status = 'received', payment_signature = ?, payment_expected_sol = ?, payment_received_at = ? WHERE id = ?", [
+        result.signature,
+        expectedSol,
+        new Date().toISOString(),
+        investment.id
+      ]);
+      store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'verified_sol_payment', ?, ?, ?)", [
+        user.name,
+        `investment:${investment.id}`,
+        `${result.receivedSol.toFixed(9)} SOL recibidos en ${result.treasuryAddress}`,
+        new Date().toISOString()
+      ]);
+      res.redirect("/dashboard?payment=received");
+    } catch (error) {
+      store.run("UPDATE investments SET status = 'payment_failed', payment_status = 'failed', payment_signature = ? WHERE id = ?", [signature, investment.id]);
+      store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'failed_sol_payment_verification', ?, ?, ?)", [
+        user.name,
+        `investment:${investment.id}`,
+        error.message || String(error),
+        new Date().toISOString()
+      ]);
+      res.redirect("/dashboard?payment=failed");
+    }
   });
 }
 

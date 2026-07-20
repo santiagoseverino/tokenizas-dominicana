@@ -91,6 +91,10 @@ function migrate() {
       tokens INTEGER NOT NULL,
       payment_method TEXT NOT NULL,
       status TEXT NOT NULL,
+      payment_status TEXT NOT NULL DEFAULT 'pending',
+      payment_expected_sol REAL,
+      payment_signature TEXT,
+      payment_received_at TEXT,
       created_at TEXT NOT NULL
     );
 
@@ -264,6 +268,18 @@ function migrate() {
   }
   if (!investmentColumns.includes("investor_note")) {
     db.run("ALTER TABLE investments ADD COLUMN investor_note TEXT");
+  }
+  if (!investmentColumns.includes("payment_status")) {
+    db.run("ALTER TABLE investments ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'pending'");
+  }
+  if (!investmentColumns.includes("payment_expected_sol")) {
+    db.run("ALTER TABLE investments ADD COLUMN payment_expected_sol REAL");
+  }
+  if (!investmentColumns.includes("payment_signature")) {
+    db.run("ALTER TABLE investments ADD COLUMN payment_signature TEXT");
+  }
+  if (!investmentColumns.includes("payment_received_at")) {
+    db.run("ALTER TABLE investments ADD COLUMN payment_received_at TEXT");
   }
   if (!projectColumns.includes("category")) {
     db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");

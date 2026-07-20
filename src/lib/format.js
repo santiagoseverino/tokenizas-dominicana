@@ -23,6 +23,8 @@ function statusLabel(status, req) {
     tokens_issued: "Tokens emitidos",
     compliance_review: "Revision compliance",
     pending_payment: "Pago pendiente",
+    payment_received: "Pago recibido",
+    payment_failed: "Pago no confirmado",
     pending: "Pendiente",
     approved: "Aprobado",
     rejected: "Rechazado",

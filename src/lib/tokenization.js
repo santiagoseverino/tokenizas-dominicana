@@ -109,6 +109,7 @@ async function issueTokensForInvestment(investmentId) {
   if (!investment) throw new Error("Investment not found");
   if (investment.kyc_status !== "approved") throw new Error("Investor KYC is not approved");
   if (investment.status === "tokens_issued") throw new Error("Tokens were already issued for this order");
+  if (investment.status !== "payment_received") throw new Error("El pago on-chain debe estar confirmado antes de emitir tokens");
 
   const project = store.get("SELECT * FROM projects WHERE id = ?", [investment.project_id]);
   const mint = await ensureProjectMint(project);

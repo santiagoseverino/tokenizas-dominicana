@@ -46,9 +46,10 @@ SOLANA_CLUSTER=devnet
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_PAYER_SECRET_KEY=[12,34,...64 numeros en total...]
 SOLANA_TOKEN_DECIMALS=6
+SOLANA_PAYMENT_SOL_PER_TOKEN=0.001
 ```
 
-`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON completo de la llave privada, con 64 numeros. Esa wallet sera la autoridad del mint y pagara las transacciones. Usa `SOLANA_TOKEN_DECIMALS=6` para permitir compras fraccionarias como `0.005` token. Verifica la configuracion:
+`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON completo de la llave privada, con 64 numeros. Esa wallet sera la autoridad del mint, la treasury de pago devnet y pagara las transacciones. Usa `SOLANA_TOKEN_DECIMALS=6` para permitir compras fraccionarias como `0.005` token. `SOLANA_PAYMENT_SOL_PER_TOKEN` controla el pago demo en SOL devnet por cada token reservado. Verifica la configuracion:
 
 ```bash
 npm run solana:check

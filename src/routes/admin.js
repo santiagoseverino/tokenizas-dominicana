@@ -56,6 +56,15 @@ function solanaExplorerAddress(address) {
   return `https://explorer.solana.com/address/${address}${cluster}`;
 }
 
+function solanaExplorerTx(signature) {
+  const cluster = config.solanaCluster === "mainnet-beta" ? "" : `?cluster=${config.solanaCluster}`;
+  return `https://explorer.solana.com/tx/${signature}${cluster}`;
+}
+
+function looksLikeSolanaSignature(signature) {
+  return /^[1-9A-HJ-NP-Za-km-z]{64,100}$/.test(String(signature || ""));
+}
+
 function errorMessage(error) {
   if (!error) return "Error desconocido. Revisa journalctl para mas detalles.";
   if (error.message) return error.message;
@@ -65,6 +74,13 @@ function errorMessage(error) {
   } catch (_) {
     return String(error);
   }
+}
+
+function renderTokenEvent(event) {
+  const explorerLink = looksLikeSolanaSignature(event.signature)
+    ? `<a class="button small" href="${solanaExplorerTx(event.signature)}" target="_blank" rel="noopener">Ver transaccion en Solana Explorer</a>`
+    : "";
+  return `<div class="event"><b>${event.event_type} - ${event.token_symbol}</b><span>${event.signature}</span><p>${event.note}</p>${explorerLink}</div>`;
 }
 
 function projectForm(project = {}, offering = {}, error = "") {
@@ -656,7 +672,7 @@ function registerAdminRoutes(app) {
         </section>
         <section class="panel">
           <h3>Eventos on-chain simulados</h3>
-          ${events.map((event) => `<div class="event"><b>${event.event_type} - ${event.token_symbol}</b><span>${event.signature}</span><p>${event.note}</p></div>`).join("")}
+          ${events.map((event) => renderTokenEvent(event)).join("")}
         </section>
       </main>
     `, req));

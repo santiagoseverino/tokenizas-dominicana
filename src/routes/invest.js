@@ -15,10 +15,26 @@ function registerInvestRoutes(app) {
     `), req);
     const defaultProject = projects.find((project) => project.status === "open") || projects[0];
     const t = tr(req);
+    const investor = currentInvestor(req);
+    if (!investor) {
+      return res.send(layout("Acceso inversionista", `
+        <main class="authPage">
+          <section class="panel loginPanel investorGate">
+            <div class="loginMark">INV</div>
+            <p class="eyebrow">${t.invest}</p>
+            <h1>${t.investorAccessTitle || t.investor.portal}</h1>
+            <p class="muted">${t.investorAccessLead || t.investor.registerLead}</p>
+            <div class="actions">
+              <a class="button primary" href="/investor/login">${t.investor.login}</a>
+              <a class="button" href="/investor/register">${t.investor.register}</a>
+            </div>
+          </section>
+        </main>
+      `, req));
+    }
     res.send(layout("Invertir", `
       <main class="page">
         <div class="sectionHead"><p class="eyebrow">${t.createOrder}</p><h1>${t.investor.createOrder}</h1><p class="muted">${t.investor.loginLead}</p></div>
-        ${currentInvestor(req) ? "" : `<div class="alert">${t.investor.noAccount} <a href="/investor/register">${t.investor.register}</a> / <a href="/investor/login">${t.investor.login}</a>.</div>`}
         <section class="investPage">
           <form class="panel investPanel" method="post" action="/invest">
             <h2>${t.createOrder}</h2>

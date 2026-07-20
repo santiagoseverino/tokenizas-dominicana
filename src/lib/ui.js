@@ -37,6 +37,7 @@ function layout(title, body, req) {
           </div>
           <a href="/marketplace">Marketplace</a>
           <a href="/invest">${t.invest}</a>
+          <a href="/investor/login">${t.investorAccess || t.investor.login}</a>
           <a href="/issuer/apply">${t.tokenize}</a>
           <a href="/investor">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>

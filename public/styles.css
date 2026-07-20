@@ -254,6 +254,12 @@ h3 { font-size: 21px; }
   font-size: 34px;
   margin-bottom: 0;
 }
+.investorGate .actions {
+  margin-top: 4px;
+}
+.investorGate .button {
+  flex: 1;
+}
 .loginMark {
   width: 54px;
   height: 54px;

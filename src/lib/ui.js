@@ -31,6 +31,7 @@ function layout(title, body, req) {
               <a href="/projects?category=art">${categories.art}</a>
               <a href="/projects?category=music">${categories.music}</a>
               <a href="/projects?category=tourism">${categories.tourism}</a>
+              <a href="/projects?category=health-wellness">${categories["health-wellness"]}</a>
               <a href="/projects?category=business">${categories.business}</a>
               <a href="/projects?category=energy">${categories.energy}</a>
             </div>

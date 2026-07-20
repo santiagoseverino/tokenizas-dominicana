@@ -9,6 +9,7 @@ const categoryFilters = {
   art: { title: "Arte", pageTitle: "Proyectos de arte", patterns: ["arte", "galeria", "coleccion"] },
   music: { title: "Musica", pageTitle: "Proyectos de musica", slugs: ["lionel-the-star-entertainment"], patterns: ["musica", "royalties", "catalogo"] },
   tourism: { title: "Turismo", pageTitle: "Proyectos de turismo", slugs: ["samana-eco-hotel", "punta-cana-villas"], patterns: ["turistica", "hotel", "hospitality", "eco"] },
+  "health-wellness": { title: "Health and wellness", pageTitle: "Proyectos de salud y bienestar", patterns: ["salud", "bienestar", "wellness", "health", "spa", "clinica", "medical"] },
   business: { title: "Negocios", pageTitle: "Proyectos de negocios", patterns: ["negocio", "pyme", "empresa"] },
   energy: { title: "Energia", pageTitle: "Proyectos de energia", patterns: ["energia", "solar", "renovable"] }
 };
@@ -49,7 +50,7 @@ function registerProjectRoutes(app) {
     }));
   });
 
-  app.get("/marketplace", (req, res) => {
+  app.get("/primary-marketplace", (req, res) => {
     const projects = localizeProjects(store.all(`
       SELECT p.*
       FROM projects p

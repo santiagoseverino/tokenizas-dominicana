@@ -7,7 +7,7 @@ const { layout, money, statusLabel } = require("../lib/ui");
 
 const issuerUploadDir = path.join(__dirname, "..", "..", "private", "issuer");
 
-const projectCategoryKeys = ["real-estate", "agriculture", "art", "music", "tourism", "business", "energy"];
+const projectCategoryKeys = ["real-estate", "agriculture", "art", "music", "tourism", "health-wellness", "business", "energy"];
 
 const issuerDocumentTypeKeys = ["owner_id", "company_registry", "property_title", "tax_clearance", "permit_authority", "budget", "financial_model", "legal_opinion"];
 

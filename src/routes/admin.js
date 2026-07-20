@@ -17,6 +17,7 @@ const projectCategories = [
   ["art", "Arte"],
   ["music", "Musica"],
   ["tourism", "Turismo"],
+  ["health-wellness", "Health and wellness"],
   ["business", "Negocios"],
   ["energy", "Energia"]
 ];

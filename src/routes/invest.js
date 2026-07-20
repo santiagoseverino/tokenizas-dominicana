@@ -1,17 +1,18 @@
 const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
 const { tr } = require("../lib/i18n");
+const { localizeProjects } = require("../lib/project-content");
 const { layout, money, statusLabel } = require("../lib/ui");
 
 function registerInvestRoutes(app) {
   app.get("/invest", (req, res) => {
-    const projects = store.all(`
+    const projects = localizeProjects(store.all(`
       SELECT p.*, o.raised, o.hard_cap
       FROM projects p
       LEFT JOIN offerings o ON o.project_id = p.id
       WHERE p.status IN ('open', 'due_diligence', 'funded')
       ORDER BY CASE p.status WHEN 'open' THEN 1 WHEN 'due_diligence' THEN 2 ELSE 3 END, p.id
-    `);
+    `), req);
     const defaultProject = projects.find((project) => project.status === "open") || projects[0];
     const t = tr(req);
     res.send(layout("Invertir", `

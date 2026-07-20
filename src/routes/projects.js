@@ -1,5 +1,6 @@
 const store = require("../db");
 const { tr } = require("../lib/i18n");
+const { localizeProject, localizeProjects } = require("../lib/project-content");
 const { fact, layout, money, number, projectCard, statusLabel } = require("../lib/ui");
 
 const categoryFilters = {
@@ -39,7 +40,7 @@ function registerProjectRoutes(app) {
     const selectedCategory = categoryFilters[category];
     const t = tr(req);
     const categoryTitle = selectedCategory ? t.categoryLabels[category] : t.projectPages.all;
-    const projects = store.all("SELECT * FROM projects ORDER BY created_at DESC").filter((project) => projectMatchesCategory(project, category));
+    const projects = localizeProjects(store.all("SELECT * FROM projects ORDER BY created_at DESC").filter((project) => projectMatchesCategory(project, category)), req);
     res.send(renderProjectGridPage(req, {
       title: selectedCategory ? t.projectPages.categoryTitles[category] : t.projectPages.tokenizable,
       eyebrow: t.projectPages.primaryMarket,
@@ -49,12 +50,12 @@ function registerProjectRoutes(app) {
   });
 
   app.get("/marketplace", (req, res) => {
-    const projects = store.all(`
+    const projects = localizeProjects(store.all(`
       SELECT p.*
       FROM projects p
       JOIN token_mints tm ON tm.project_id = p.id
       ORDER BY tm.created_at DESC
-    `);
+    `), req);
     res.send(renderProjectGridPage(req, {
       title: tr(req).projectPages.marketplaceTitle,
       eyebrow: tr(req).projectPages.marketplaceEyebrow,
@@ -64,7 +65,7 @@ function registerProjectRoutes(app) {
   });
 
   app.get("/projects/:slug", (req, res) => {
-    const project = store.get("SELECT * FROM projects WHERE slug = ?", [req.params.slug]);
+    const project = localizeProject(store.get("SELECT * FROM projects WHERE slug = ?", [req.params.slug]), req);
     if (!project) return res.status(404).send(tr(req).projectPages.notFound);
     const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]);
     const docs = store.all("SELECT * FROM documents WHERE project_id = ?", [project.id]);

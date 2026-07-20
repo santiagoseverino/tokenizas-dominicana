@@ -4,6 +4,7 @@ const store = require("../db");
 const { currentInvestor, hashPassword, investorSessionCookieValue, requireInvestor, verifyPassword } = require("../middleware/auth");
 const { readForm } = require("../lib/multipart");
 const { tr } = require("../lib/i18n");
+const { localizeProjects } = require("../lib/project-content");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 
 const kycUploadDir = path.join(__dirname, "..", "..", "private", "kyc");
@@ -66,13 +67,13 @@ function saveKycDocument(file, userId, documentType) {
 function renderPortal(req, message = "") {
   const user = req.investor;
   const t = tr(req).investor;
-  const investments = store.all(`
-    SELECT i.*, p.title, p.token_symbol, p.image_url, p.location
+  const investments = localizeProjects(store.all(`
+    SELECT i.*, p.slug, p.title, p.token_symbol, p.image_url, p.location
     FROM investments i
     JOIN projects p ON p.id = i.project_id
     WHERE i.user_id = ?
     ORDER BY i.id DESC
-  `, [user.id]);
+  `, [user.id]), req);
   const docs = store.all("SELECT * FROM kyc_documents WHERE user_id = ? ORDER BY uploaded_at DESC", [user.id]);
   const docTypes = documentTypes(req);
   const requiredTypes = new Set(docTypes.map((item) => item[0]));

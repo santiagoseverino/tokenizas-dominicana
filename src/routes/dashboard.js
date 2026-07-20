@@ -1,25 +1,26 @@
 const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
+const { localizeProjects } = require("../lib/project-content");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 
 function registerDashboardRoutes(app) {
   app.get("/dashboard", (req, res) => {
     const user = currentInvestor(req);
     if (!user) return res.redirect("/investor/login");
-    const investments = store.all(`
+    const investments = localizeProjects(store.all(`
       SELECT i.*, p.title, p.token_symbol, p.image_url, p.location
       FROM investments i JOIN projects p ON p.id = i.project_id
       WHERE i.user_id = ?
       ORDER BY i.id DESC
-    `, [user.id]);
-    const balances = store.all(`
-      SELECT tb.*, p.title project_title, tm.mint_address, tm.network
+    `, [user.id]), req);
+    const balances = localizeProjects(store.all(`
+      SELECT tb.*, p.slug, p.title project_title, tm.mint_address, tm.network
       FROM token_balances tb
       JOIN projects p ON p.id = tb.project_id
       LEFT JOIN token_mints tm ON tm.project_id = tb.project_id
       WHERE tb.user_id = ?
       ORDER BY tb.updated_at DESC
-    `, [user.id]);
+    `, [user.id]).map((balance) => ({ ...balance, slug: balance.slug, title: balance.project_title })), req).map((balance) => ({ ...balance, project_title: balance.title }));
     const balanceProjectIds = new Set(balances.map((balance) => Number(balance.project_id)));
     const reservedTokens = investments.filter((item) => item.status !== "tokens_issued" || !balanceProjectIds.has(Number(item.project_id)));
     const total = investments.reduce((sum, item) => sum + item.amount, 0);

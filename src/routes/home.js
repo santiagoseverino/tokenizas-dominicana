@@ -1,5 +1,6 @@
 const store = require("../db");
 const { tr } = require("../lib/i18n");
+const { localizeProjects } = require("../lib/project-content");
 const { featureCard, layout, money, projectCard, whatsappUrl } = require("../lib/ui");
 
 function registerHomeRoutes(app) {
@@ -12,7 +13,7 @@ function registerHomeRoutes(app) {
         COALESCE((SELECT SUM(raised) FROM offerings), 0) raised
       FROM projects
     `);
-    const projects = store.all("SELECT * FROM projects ORDER BY id LIMIT 3");
+    const projects = localizeProjects(store.all("SELECT * FROM projects ORDER BY id LIMIT 3"), req);
 
     res.send(layout("Inicio", `
       <main>

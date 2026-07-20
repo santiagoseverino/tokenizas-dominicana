@@ -18,9 +18,18 @@ function registerLegalRoutes(app) {
           <article class="panel lawCard"><strong>02</strong><h3>Valores / securities</h3><p>${t.legal2}</p></article>
           <article class="panel lawCard"><strong>03</strong><h3>Registro separado</h3><p>${t.legal3}</p></article>
         </section>
+        <section class="section">
+          <div class="sectionHead">
+            <p class="eyebrow">${t.legal}</p>
+            <h2>${t.legalRulesTitle}</h2>
+          </div>
+          <div class="grid cards">
+            ${t.legalRules.map((rule, index) => `<article class="panel lawCard"><strong>${String(index + 4).padStart(2, "0")}</strong><h3>${rule[0]}</h3><p>${rule[1]}</p></article>`).join("")}
+          </div>
+        </section>
         <section class="panel legalNote">
-          <h2>Fuentes regulatorias de referencia</h2>
-          <p>Para produccion real se debe validar con abogados dominicanos, la Superintendencia del Mercado de Valores, la Direccion General de Impuestos Internos, la Unidad de Analisis Financiero y politicas del Banco Central sobre activos virtuales.</p>
+          <h2>${t.legalSourcesTitle}</h2>
+          <p>${t.legalSourcesText}</p>
         </section>
       </main>
     `, req));

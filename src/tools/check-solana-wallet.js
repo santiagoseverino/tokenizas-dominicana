@@ -1,5 +1,5 @@
 const config = require("../config");
-const { Connection, Keypair, LAMPORTS_PER_SOL } = require("@solana/web3.js");
+const { loadWeb3 } = require("../lib/solana-sdk");
 
 function parseSecretKey(value) {
   if (!value) throw new Error("SOLANA_PAYER_SECRET_KEY no existe en .env");
@@ -20,6 +20,7 @@ function parseSecretKey(value) {
 }
 
 (async () => {
+  const { Connection, Keypair, LAMPORTS_PER_SOL } = loadWeb3();
   const secretKey = parseSecretKey(config.solanaPayerSecretKey);
   const keypair = Keypair.fromSecretKey(secretKey);
   const connection = new Connection(config.solanaRpcUrl, "confirmed");

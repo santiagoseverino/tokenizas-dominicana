@@ -1,4 +1,5 @@
 const config = require("../config");
+const { loadWeb3 } = require("./solana-sdk");
 
 function parseSecretKey(value) {
   if (!value) return null;
@@ -29,7 +30,7 @@ function isRealSolanaEnabled() {
 }
 
 async function loadSolana() {
-  const web3 = require("@solana/web3.js");
+  const web3 = loadWeb3();
   const spl = require("@solana/spl-token");
   const secretKey = parseSecretKey(config.solanaPayerSecretKey);
   if (!secretKey) throw new Error("SOLANA_PAYER_SECRET_KEY no esta configurada correctamente");
@@ -75,7 +76,7 @@ async function mintTokensOnTestnet({ mintAddress, recipientAddress, amount }) {
 
 function createDemoWalletAddress() {
   if (!isRealSolanaEnabled()) return null;
-  const { Keypair } = require("@solana/web3.js");
+  const { Keypair } = loadWeb3();
   return Keypair.generate().publicKey.toBase58();
 }
 

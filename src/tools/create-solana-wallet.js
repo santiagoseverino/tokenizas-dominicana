@@ -1,5 +1,6 @@
-const { Keypair } = require("@solana/web3.js");
+const { loadWeb3 } = require("../lib/solana-sdk");
 
+const { Keypair } = loadWeb3();
 const keypair = Keypair.generate();
 
 console.log("Nueva wallet Solana para desarrollo");

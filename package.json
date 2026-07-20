@@ -17,8 +17,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@solana/spl-token": "^0.4.9",
-    "@solana/web3.js": "^1.95.3",
+    "@solana/spl-token": "0.4.9",
+    "@solana/web3.js": "1.95.3",
     "express": "^4.19.2",
     "nodemailer": "^6.9.15",
     "sql.js": "^1.12.0"

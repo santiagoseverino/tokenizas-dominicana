@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const store = require("../db");
 const config = require("../config");
-const { createDemoWalletAddress, createMintOnTestnet, isRealSolanaEnabled, mintTokensOnTestnet } = require("./solana");
+const { createDemoWalletAddress, createMintOnTestnet, isRealSolanaEnabled, isValidSolanaAddress, mintTokensOnTestnet } = require("./solana");
 
 function fakeSolanaAddress(prefix) {
   return `${prefix}${crypto.randomBytes(24).toString("hex")}`.slice(0, 44);
@@ -13,10 +13,43 @@ function fakeSignature() {
 
 async function ensureProjectMint(project) {
   const existing = store.get("SELECT * FROM token_mints WHERE project_id = ?", [project.id]);
-  if (existing) return existing;
+  const realMode = isRealSolanaEnabled();
+  if (existing) {
+    const canUpgradeDemoMint = realMode && (!isValidSolanaAddress(existing.mint_address) || existing.status === "configured_demo" || !String(existing.network || "").includes(config.solanaCluster));
+    if (!canUpgradeDemoMint) return existing;
+
+    const now = new Date().toISOString();
+    const chainMint = await createMintOnTestnet();
+    store.run(`
+      UPDATE token_mints
+      SET network = ?, mint_address = ?, treasury_wallet = ?, authority_wallet = ?, multisig_wallet = ?,
+          token_standard = ?, decimals = ?, transfer_rules = ?, status = ?
+      WHERE id = ?
+    `, [
+      `solana-${config.solanaCluster}`,
+      chainMint.mintAddress,
+      chainMint.treasuryWallet,
+      chainMint.authorityWallet,
+      chainMint.authorityWallet,
+      "SPL Token",
+      config.solanaTokenDecimals,
+      "KYC whitelist, transfer hook, lockup, admin freeze authority",
+      "onchain_devnet",
+      existing.id
+    ]);
+    const upgraded = store.get("SELECT * FROM token_mints WHERE id = ?", [existing.id]);
+    store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
+      project.id,
+      "mint_upgraded_to_devnet",
+      "created-by-solana-devnet",
+      upgraded.multisig_wallet,
+      `Mint demo reemplazado por SPL real ${project.token_symbol} en ${upgraded.network}.`,
+      now
+    ]);
+    return upgraded;
+  }
 
   const now = new Date().toISOString();
-  const realMode = isRealSolanaEnabled();
   const chainMint = realMode ? await createMintOnTestnet() : null;
   store.run(`
     INSERT INTO token_mints
@@ -32,7 +65,7 @@ async function ensureProjectMint(project) {
     realMode ? "SPL Token" : "Token Extensions demo",
     config.solanaTokenDecimals,
     "KYC whitelist, transfer hook, lockup, admin freeze authority",
-    realMode ? "onchain_testnet" : "configured_demo",
+    realMode ? "onchain_devnet" : "configured_demo",
     now
   ]);
 
@@ -40,7 +73,7 @@ async function ensureProjectMint(project) {
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     project.id,
     "mint_configured",
-    realMode ? "created-by-solana-testnet" : fakeSignature(),
+    realMode ? "created-by-solana-devnet" : fakeSignature(),
     mint.multisig_wallet,
     `Mint ${project.token_symbol} configurado en ${mint.network}.`,
     now

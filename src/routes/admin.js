@@ -8,6 +8,7 @@ const { tr } = require("../lib/i18n");
 const { parseMultipart } = require("../lib/multipart");
 const { layout, money, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
+const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -615,7 +616,7 @@ function registerAdminRoutes(app) {
                 <span class="monoBreak">Authority: ${project.multisig_wallet || "Pendiente"}</span>
               </div>
               <div class="mintActions">
-                ${project.mint_address ? `<span class="statusBadge">Mint creado</span><a class="button primary" href="${solanaExplorerAddress(project.mint_address)}" target="_blank" rel="noopener">Ver mint en Solana Explorer</a>` : `<a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}
+                ${project.mint_address && isValidSolanaAddress(project.mint_address) ? `<span class="statusBadge">Mint creado</span><a class="button primary" href="${solanaExplorerAddress(project.mint_address)}" target="_blank" rel="noopener">Ver mint en Solana Explorer</a>` : `<span class="statusBadge">Mint demo</span><a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">${isRealSolanaEnabled() ? "Recrear mint real en devnet" : "Configurar mint demo"}</a>`}
               </div>
             </article>`).join("")}
           </div>

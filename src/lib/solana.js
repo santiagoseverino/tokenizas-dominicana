@@ -80,9 +80,20 @@ function createDemoWalletAddress() {
   return Keypair.generate().publicKey.toBase58();
 }
 
+function isValidSolanaAddress(address) {
+  try {
+    const { PublicKey } = loadWeb3();
+    new PublicKey(address);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 module.exports = {
   createDemoWalletAddress,
   createMintOnTestnet,
+  isValidSolanaAddress,
   isRealSolanaEnabled,
   mintTokensOnTestnet
 };

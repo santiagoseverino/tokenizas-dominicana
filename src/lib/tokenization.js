@@ -141,9 +141,15 @@ async function issueTokensForInvestment(investmentId) {
       now
     ]);
   }
-  store.run("UPDATE investments SET status = 'tokens_issued' WHERE id = ?", [investment.id]);
   const issueSignature = chainIssue && chainIssue.signature ? chainIssue.signature : fakeSignature();
   const issueTokenAccount = chainIssue && chainIssue.tokenAccount ? chainIssue.tokenAccount : "token account no reportado por la libreria SPL";
+  store.run("UPDATE investments SET status = 'tokens_issued', issue_signature = ?, issue_token_account = ?, issue_mint_address = ?, issued_at = ? WHERE id = ?", [
+    issueSignature,
+    issueTokenAccount,
+    mint.mint_address,
+    now,
+    investment.id
+  ]);
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     investment.project_id,
     "tokens_issued",

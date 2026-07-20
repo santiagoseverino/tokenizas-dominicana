@@ -39,6 +39,8 @@ function renderReceipt(item, events, req) {
   if (item.status === "canceled") return "";
   const d = tr(req).dashboardText;
   const issueEvent = events.find((event) => Number(event.project_id) === Number(item.project_id) && event.event_type === "tokens_issued" && String(event.note || "").includes(String(item.token_symbol)));
+  const issueSignature = item.issue_signature || (issueEvent && issueEvent.signature);
+  const issuedAt = item.issued_at || (issueEvent && issueEvent.created_at);
   const paymentDone = item.payment_status === "received" || item.payment_received_at;
   return `<article class="receiptItem">
     <div>
@@ -49,7 +51,7 @@ function renderReceipt(item, events, req) {
     <div class="receiptSteps">
       <div class="receiptStep done"><b>${d.receiptOrderCreated}</b><span>${item.created_at}</span></div>
       <div class="receiptStep ${paymentDone ? "done" : ""}"><b>${d.receiptPayment}</b><span>${paymentDone ? `${number.format(item.payment_expected_sol || 0)} SOL` : d.pending}</span>${explorerButton(item.payment_signature, d.viewPaymentTx)}</div>
-      <div class="receiptStep ${item.status === "tokens_issued" ? "done" : ""}"><b>${d.receiptIssued}</b><span>${issueEvent ? issueEvent.created_at : d.pending}</span>${issueEvent ? explorerButton(issueEvent.signature, d.viewIssueTx) : ""}</div>
+      <div class="receiptStep ${item.status === "tokens_issued" ? "done" : ""}"><b>${d.receiptIssued}</b><span>${issuedAt || d.pending}</span>${explorerButton(issueSignature, d.viewIssueTx)}${item.issue_mint_address ? `<span class="monoBreak">Mint: ${item.issue_mint_address}</span>` : ""}${item.issue_token_account ? `<span class="monoBreak">Token account: ${item.issue_token_account}</span>` : ""}</div>
     </div>
   </article>`;
 }

@@ -10,6 +10,7 @@
     "seed:lionel": "node src/seed-lionel.js",
     "solana:wallet": "node src/tools/create-solana-wallet.js",
     "solana:check": "node src/tools/check-solana-wallet.js",
+    "receipts:sync": "node src/tools/sync-issued-receipts.js",
     "dev": "node src/server.js",
     "health": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>r.json()).then(console.log)\""
   },

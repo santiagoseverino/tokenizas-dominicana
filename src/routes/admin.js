@@ -83,6 +83,19 @@ function renderTokenEvent(event) {
   return `<div class="event"><b>${event.event_type} - ${event.token_symbol}</b><span>${event.signature}</span><p>${event.note}</p>${explorerLink}</div>`;
 }
 
+function renderIssuedInvestment(item) {
+  const paymentLink = looksLikeSolanaSignature(item.payment_signature)
+    ? `<a class="button small" href="${solanaExplorerTx(item.payment_signature)}" target="_blank" rel="noopener">Ver pago</a>`
+    : "";
+  const issueLink = looksLikeSolanaSignature(item.issue_signature)
+    ? `<a class="button small" href="${solanaExplorerTx(item.issue_signature)}" target="_blank" rel="noopener">Ver emision</a>`
+    : "";
+  const mintLink = item.issue_mint_address && isValidSolanaAddress(item.issue_mint_address)
+    ? `<a class="button small" href="${solanaExplorerAddress(item.issue_mint_address)}" target="_blank" rel="noopener">Ver mint</a>`
+    : "";
+  return `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${item.payment_status || "recibido"}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issue_signature ? ` - Emision: ${item.issue_signature}` : ""}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p>${item.issue_mint_address ? `<span class="monoBreak">Mint: ${item.issue_mint_address}</span>` : ""}${item.issue_token_account ? `<span class="monoBreak">Token account: ${item.issue_token_account}</span>` : ""}<div class="inlineActions">${paymentLink}${issueLink}${mintLink}</div></div>`;
+}
+
 function projectForm(project = {}, offering = {}, error = "") {
   const isEdit = Boolean(project.id);
   return `
@@ -681,7 +694,7 @@ function registerAdminRoutes(app) {
         </section>
         <section class="panel">
           <h3>Ordenes emitidas</h3>
-          ${issuedInvestments.map((item) => `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${item.payment_status || "recibido"}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p></div>`).join("") || "<p class=\"muted\">Todavia no hay ordenes emitidas.</p>"}
+          ${issuedInvestments.map((item) => renderIssuedInvestment(item)).join("") || "<p class=\"muted\">Todavia no hay ordenes emitidas.</p>"}
         </section>
         <section class="panel">
           <h3>Eventos on-chain simulados</h3>

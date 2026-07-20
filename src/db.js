@@ -95,6 +95,10 @@ function migrate() {
       payment_expected_sol REAL,
       payment_signature TEXT,
       payment_received_at TEXT,
+      issue_signature TEXT,
+      issue_token_account TEXT,
+      issue_mint_address TEXT,
+      issued_at TEXT,
       created_at TEXT NOT NULL
     );
 
@@ -280,6 +284,18 @@ function migrate() {
   }
   if (!investmentColumns.includes("payment_received_at")) {
     db.run("ALTER TABLE investments ADD COLUMN payment_received_at TEXT");
+  }
+  if (!investmentColumns.includes("issue_signature")) {
+    db.run("ALTER TABLE investments ADD COLUMN issue_signature TEXT");
+  }
+  if (!investmentColumns.includes("issue_token_account")) {
+    db.run("ALTER TABLE investments ADD COLUMN issue_token_account TEXT");
+  }
+  if (!investmentColumns.includes("issue_mint_address")) {
+    db.run("ALTER TABLE investments ADD COLUMN issue_mint_address TEXT");
+  }
+  if (!investmentColumns.includes("issued_at")) {
+    db.run("ALTER TABLE investments ADD COLUMN issued_at TEXT");
   }
   if (!projectColumns.includes("category")) {
     db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");

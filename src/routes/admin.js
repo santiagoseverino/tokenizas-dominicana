@@ -622,6 +622,15 @@ function registerAdminRoutes(app) {
       WHERE i.status NOT IN ('tokens_issued', 'canceled')
       ORDER BY i.id DESC
     `);
+    const issuedInvestments = store.all(`
+      SELECT i.*, u.name investor_name, u.kyc_status, p.title project_title, p.token_symbol
+      FROM investments i
+      JOIN users u ON u.id = i.user_id
+      JOIN projects p ON p.id = i.project_id
+      WHERE i.status = 'tokens_issued'
+      ORDER BY i.id DESC
+      LIMIT 20
+    `);
     const balances = store.all(`
       SELECT tb.*, u.name investor_name, p.title project_title
       FROM token_balances tb
@@ -669,6 +678,10 @@ function registerAdminRoutes(app) {
             <h3>Balances tokenizados</h3>
             ${balances.map((balance) => `<div class="event"><b>${balance.investor_name}</b><span>${balance.project_title}</span><p>${balance.balance} ${balance.token_symbol} / bloqueados: ${balance.locked_balance}</p><span>${balance.wallet_address}</span></div>`).join("") || "<p class=\"muted\">Sin balances todavia.</p>"}
           </div>
+        </section>
+        <section class="panel">
+          <h3>Ordenes emitidas</h3>
+          ${issuedInvestments.map((item) => `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${item.payment_status || "recibido"}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p></div>`).join("") || "<p class=\"muted\">Todavia no hay ordenes emitidas.</p>"}
         </section>
         <section class="panel">
           <h3>Eventos on-chain simulados</h3>

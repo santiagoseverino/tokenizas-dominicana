@@ -582,7 +582,7 @@ function registerAdminRoutes(app) {
 
   app.get("/admin/tokenization", requireAdmin, (req, res) => {
     const projects = store.all(`
-      SELECT p.*, tm.mint_address, tm.network, tm.status mint_status, tm.multisig_wallet
+      SELECT p.*, tm.mint_address, tm.network, tm.status mint_status, tm.multisig_wallet, tm.decimals mint_decimals
       FROM projects p
       LEFT JOIN token_mints tm ON tm.project_id = p.id
       ORDER BY p.id
@@ -628,7 +628,7 @@ function registerAdminRoutes(app) {
                 <span class="monoBreak">Authority: ${project.multisig_wallet || "Pendiente"}</span>
               </div>
               <div class="mintActions">
-                ${project.mint_address && isValidSolanaAddress(project.mint_address) ? `<span class="statusBadge">Mint creado</span><a class="button primary" href="${solanaExplorerAddress(project.mint_address)}" target="_blank" rel="noopener">Ver mint en Solana Explorer</a>` : `<span class="statusBadge">Mint demo</span><a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">${isRealSolanaEnabled() ? "Recrear mint real en devnet" : "Configurar mint demo"}</a>`}
+                ${project.mint_address && isValidSolanaAddress(project.mint_address) && Number(project.mint_decimals) === config.solanaTokenDecimals ? `<span class="statusBadge">Mint creado</span><a class="button primary" href="${solanaExplorerAddress(project.mint_address)}" target="_blank" rel="noopener">Ver mint en Solana Explorer</a>` : `<span class="statusBadge">Mint pendiente</span><a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">${isRealSolanaEnabled() ? "Crear mint real en devnet" : "Configurar mint demo"}</a>`}
               </div>
             </article>`).join("")}
           </div>

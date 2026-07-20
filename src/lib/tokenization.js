@@ -15,7 +15,7 @@ async function ensureProjectMint(project) {
   const existing = store.get("SELECT * FROM token_mints WHERE project_id = ?", [project.id]);
   const realMode = isRealSolanaEnabled();
   if (existing) {
-    const canUpgradeDemoMint = realMode && (!isValidSolanaAddress(existing.mint_address) || existing.status === "configured_demo" || !String(existing.network || "").includes(config.solanaCluster));
+    const canUpgradeDemoMint = realMode && (!isValidSolanaAddress(existing.mint_address) || existing.status === "configured_demo" || Number(existing.decimals) !== config.solanaTokenDecimals || !String(existing.network || "").includes(config.solanaCluster));
     if (!canUpgradeDemoMint) return existing;
 
     const now = new Date().toISOString();

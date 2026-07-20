@@ -98,15 +98,47 @@ async function createMintMetadata({ web3, payer, connection, mint, name, symbol,
   return { metadataAddress: metadata.toBase58(), metadataSignature: signature };
 }
 
-async function createMintOnTestnet(project = {}) {
-  const { spl, payer, connection } = await loadSolana();
-  const mint = await spl.createMint(
+async function createSplMint({ spl, connection, payer }) {
+  if (spl.createMint) {
+    return spl.createMint(
+      connection,
+      payer,
+      payer.publicKey,
+      payer.publicKey,
+      config.solanaTokenDecimals
+    );
+  }
+  const token = await spl.Token.createMint(
     connection,
     payer,
     payer.publicKey,
     payer.publicKey,
-    config.solanaTokenDecimals
+    config.solanaTokenDecimals,
+    spl.TOKEN_PROGRAM_ID
   );
+  return token.publicKey;
+}
+
+async function getOrCreateTokenAccount({ spl, connection, payer, mint, owner }) {
+  if (spl.getOrCreateAssociatedTokenAccount) {
+    return spl.getOrCreateAssociatedTokenAccount(connection, payer, mint, owner);
+  }
+  const token = new spl.Token(connection, mint, spl.TOKEN_PROGRAM_ID, payer);
+  const account = await token.getOrCreateAssociatedAccountInfo(owner);
+  return { address: account.address };
+}
+
+async function mintToAccount({ spl, connection, payer, mint, tokenAccount, amount }) {
+  if (spl.mintTo) {
+    return spl.mintTo(connection, payer, mint, tokenAccount, payer, amount);
+  }
+  const token = new spl.Token(connection, mint, spl.TOKEN_PROGRAM_ID, payer);
+  return token.mintTo(tokenAccount, payer.publicKey, [], Number(amount));
+}
+
+async function createMintOnTestnet(project = {}) {
+  const { spl, payer, connection } = await loadSolana();
+  const mint = await createSplMint({ spl, connection, payer });
   const metadata = await createMintMetadata({
     web3: loadWeb3(),
     payer,
@@ -128,17 +160,10 @@ async function mintTokensOnTestnet({ mintAddress, recipientAddress, amount }) {
   const { web3, spl, payer, connection } = await loadSolana();
   const mint = new web3.PublicKey(mintAddress);
   const owner = new web3.PublicKey(recipientAddress);
-  const tokenAccount = await spl.getOrCreateAssociatedTokenAccount(connection, payer, mint, owner);
+  const tokenAccount = await getOrCreateTokenAccount({ spl, connection, payer, mint, owner });
   const baseUnits = BigInt(Math.round(Number(amount) * (10 ** config.solanaTokenDecimals)));
   if (baseUnits <= 0n) throw new Error("La cantidad de tokens debe ser mayor que cero.");
-  const signature = await spl.mintTo(
-    connection,
-    payer,
-    mint,
-    tokenAccount.address,
-    payer,
-    baseUnits
-  );
+  const signature = await mintToAccount({ spl, connection, payer, mint, tokenAccount: tokenAccount.address, amount: baseUnits });
   return {
     signature,
     tokenAccount: tokenAccount.address.toBase58()

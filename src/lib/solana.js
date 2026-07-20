@@ -1,5 +1,5 @@
 const config = require("../config");
-const { loadWeb3 } = require("./solana-sdk");
+const { loadSplToken, loadWeb3 } = require("./solana-sdk");
 
 function parseSecretKey(value) {
   if (!value) return null;
@@ -31,7 +31,7 @@ function isRealSolanaEnabled() {
 
 async function loadSolana() {
   const web3 = loadWeb3();
-  const spl = require("@solana/spl-token");
+  const spl = await loadSplToken();
   const secretKey = parseSecretKey(config.solanaPayerSecretKey);
   if (!secretKey) throw new Error("SOLANA_PAYER_SECRET_KEY no esta configurada correctamente");
   const payer = web3.Keypair.fromSecretKey(secretKey);

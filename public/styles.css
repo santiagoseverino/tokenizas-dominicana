@@ -380,6 +380,26 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
+.imagePreview {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fcfd;
+}
+.imagePreview img {
+  width: 180px;
+  height: 108px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.imagePreview span {
+  color: var(--muted);
+  font-weight: 750;
+}
 .checkLine {
   display: flex;
   gap: 10px;
@@ -501,7 +521,7 @@ textarea {
   .hero, .detailHero { min-height: 620px; }
   .heroContent { padding: 36px 22px; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
   .contactPage { padding-top: 0; }
   .contactIntro { padding: 36px 0; }
@@ -512,6 +532,7 @@ textarea {
   .metrics article { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px; }
   .investPanel { position: static; }
   .miniProject img { width: 100%; height: 190px; }
+  .imagePreview img { width: 100%; height: 190px; }
   .holding { grid-template-columns: 72px 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
 }

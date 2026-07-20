@@ -1,9 +1,13 @@
+const fs = require("fs");
+const path = require("path");
 const store = require("../db");
 const { requireAdmin } = require("../middleware/auth");
 const { toCsv } = require("../lib/csv");
 const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
+
+const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 
 function slugify(value) {
   return String(value || "")
@@ -15,6 +19,77 @@ function slugify(value) {
     .slice(0, 80);
 }
 
+function parseMultipart(req) {
+  return new Promise((resolve, reject) => {
+    const type = req.headers["content-type"] || "";
+    const match = type.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    if (!match) return resolve({ fields: req.body || {}, files: {} });
+    const boundary = Buffer.from(`--${match[1] || match[2]}`);
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > 8 * 1024 * 1024) {
+        reject(new Error("La imagen no puede pasar de 8 MB."));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("error", reject);
+    req.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      const fields = {};
+      const files = {};
+      let start = buffer.indexOf(boundary);
+      while (start !== -1) {
+        const next = buffer.indexOf(boundary, start + boundary.length);
+        if (next === -1) break;
+        let part = buffer.slice(start + boundary.length + 2, next - 2);
+        const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
+        if (headerEnd !== -1) {
+          const rawHeaders = part.slice(0, headerEnd).toString("utf8");
+          const content = part.slice(headerEnd + 4);
+          const nameMatch = rawHeaders.match(/name="([^"]+)"/);
+          const fileMatch = rawHeaders.match(/filename="([^"]*)"/);
+          const typeMatch = rawHeaders.match(/content-type:\s*([^\r\n]+)/i);
+          if (nameMatch && fileMatch && fileMatch[1]) {
+            files[nameMatch[1]] = {
+              filename: fileMatch[1],
+              contentType: typeMatch ? typeMatch[1].trim().toLowerCase() : "",
+              buffer: content
+            };
+          } else if (nameMatch) {
+            fields[nameMatch[1]] = content.toString("utf8");
+          }
+        }
+        start = next;
+      }
+      resolve({ fields, files });
+    });
+  });
+}
+
+async function readForm(req) {
+  if ((req.headers["content-type"] || "").includes("multipart/form-data")) return parseMultipart(req);
+  return { fields: req.body || {}, files: {} };
+}
+
+function saveProjectImage(file, slug) {
+  if (!file || !file.buffer || file.buffer.length === 0) return "";
+  const allowed = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp"
+  };
+  const extension = allowed[file.contentType];
+  if (!extension) throw new Error("Solo se permiten imagenes JPG, PNG o WebP.");
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const filename = `${slug}-${Date.now()}${extension}`;
+  fs.writeFileSync(path.join(uploadDir, filename), file.buffer);
+  return `/uploads/${filename}`;
+}
+
 function projectForm(project = {}, offering = {}, error = "") {
   const isEdit = Boolean(project.id);
   return `
@@ -24,8 +99,9 @@ function projectForm(project = {}, offering = {}, error = "") {
         <h1>${isEdit ? "Editar proyecto" : "Crear proyecto tokenizable"}</h1>
         <p><a class="button small" href="/admin">Volver</a></p>
       </div>
-      <form class="panel contactForm" method="post" action="${isEdit ? `/admin/projects/${project.id}` : "/admin/projects"}">
+      <form class="panel contactForm" method="post" enctype="multipart/form-data" action="${isEdit ? `/admin/projects/${project.id}` : "/admin/projects"}">
         ${error ? `<div class="alert">${error}</div>` : ""}
+        ${project.image_url ? `<div class="imagePreview"><img src="${project.image_url}" alt="${project.title || "Proyecto"}" /><span>Imagen actual</span></div>` : ""}
         <section class="formGrid">
           <label>Nombre del proyecto<input name="title" value="${project.title || ""}" required /></label>
           <label>Slug publico<input name="slug" value="${project.slug || ""}" placeholder="se genera si queda vacio" /></label>
@@ -40,6 +116,7 @@ function projectForm(project = {}, offering = {}, error = "") {
           <label>Estado<select name="status">${["due_diligence", "open", "funded"].map((status) => `<option value="${status}" ${project.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}</select></label>
           <label>Riesgo<select name="risk_level">${["Bajo", "Medio", "Alto"].map((risk) => `<option ${project.risk_level === risk ? "selected" : ""}>${risk}</option>`).join("")}</select></label>
           <label>Imagen URL<input name="image_url" value="${project.image_url || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1400&q=80"}" required /></label>
+          <label>Subir imagen nueva<input name="project_image" type="file" accept="image/jpeg,image/png,image/webp" /></label>
           <label>Capital reservado USD<input name="raised" type="number" min="0" step="1000" value="${offering.raised || 0}" /></label>
           <label>Apertura<input name="opens_at" type="date" value="${offering.opens_at || "2026-08-01"}" required /></label>
           <label>Cierre<input name="closes_at" type="date" value="${offering.closes_at || "2026-10-30"}" required /></label>
@@ -159,13 +236,18 @@ function registerAdminRoutes(app) {
     res.send(layout("Nuevo proyecto", projectForm(), req));
   });
 
-  app.post("/admin/projects", requireAdmin, (req, res) => {
+  app.post("/admin/projects", requireAdmin, async (req, res) => {
     let payload;
+    let form;
     try {
-      payload = readProjectPayload(req.body);
+      form = await readForm(req);
+      payload = readProjectPayload(form.fields);
+      const uploadedImage = saveProjectImage(form.files.project_image, payload.slug);
+      if (uploadedImage) payload.image_url = uploadedImage;
       if (store.get("SELECT id FROM projects WHERE slug = ?", [payload.slug])) throw new Error("Ya existe un proyecto con ese slug.");
     } catch (error) {
-      return res.status(400).send(layout("Nuevo proyecto", projectForm(req.body, req.body, error.message), req));
+      const body = form ? form.fields : {};
+      return res.status(400).send(layout("Nuevo proyecto", projectForm(body, body, error.message), req));
     }
     const now = new Date().toISOString();
     store.run(`
@@ -216,16 +298,21 @@ function registerAdminRoutes(app) {
     res.send(layout(project.title, projectForm({ ...project, documents }, offering), req));
   });
 
-  app.post("/admin/projects/:id", requireAdmin, (req, res) => {
+  app.post("/admin/projects/:id", requireAdmin, async (req, res) => {
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
     if (!project) return res.status(404).send("Proyecto no encontrado");
     let payload;
+    let form;
     try {
-      payload = readProjectPayload(req.body);
+      form = await readForm(req);
+      payload = readProjectPayload(form.fields);
+      const uploadedImage = saveProjectImage(form.files.project_image, payload.slug);
+      if (uploadedImage) payload.image_url = uploadedImage;
       const duplicate = store.get("SELECT id FROM projects WHERE slug = ? AND id != ?", [payload.slug, project.id]);
       if (duplicate) throw new Error("Ya existe otro proyecto con ese slug.");
     } catch (error) {
-      return res.status(400).send(layout("Editar proyecto", projectForm({ id: project.id, ...req.body }, req.body, error.message), req));
+      const body = form ? form.fields : {};
+      return res.status(400).send(layout("Editar proyecto", projectForm({ id: project.id, ...body }, body, error.message), req));
     }
     store.run(`
       UPDATE projects

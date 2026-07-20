@@ -195,6 +195,11 @@ async function mintToAccount({ spl, connection, payer, mint, tokenAccount, amoun
   return token.mintTo(tokenAccount, payer.publicKey, [], legacyAmount);
 }
 
+function addressText(address) {
+  if (!address) return "";
+  return address.toBase58 ? address.toBase58() : String(address);
+}
+
 async function createMintOnTestnet(project = {}) {
   const { spl, payer, connection } = await loadSolana();
   const mint = await createSplMint({ spl, connection, payer });
@@ -225,8 +230,8 @@ async function mintTokensOnTestnet({ mintAddress, recipientAddress, amount }) {
     if (baseUnits <= 0n) throw new Error("La cantidad de tokens debe ser mayor que cero.");
     const signature = await mintToAccount({ spl, connection, payer, mint, tokenAccount: tokenAccount.address, amount: baseUnits });
     return {
-      signature,
-      tokenAccount: tokenAccount.address.toBase58()
+      signature: signature ? String(signature) : "",
+      tokenAccount: addressText(tokenAccount.address)
     };
   } catch (error) {
     throw new Error(`No se pudieron emitir tokens en Solana ${config.solanaCluster}: ${errorText(error)}`);

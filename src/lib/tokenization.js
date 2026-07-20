@@ -11,6 +11,10 @@ function fakeSignature() {
   return crypto.randomBytes(44).toString("base64url").slice(0, 88);
 }
 
+function textOrFallback(value, fallback) {
+  return value === undefined || value === null || value === "" ? fallback : String(value);
+}
+
 async function ensureProjectMint(project) {
   const existing = store.get("SELECT * FROM token_mints WHERE project_id = ?", [project.id]);
   const realMode = isRealSolanaEnabled();
@@ -41,8 +45,8 @@ async function ensureProjectMint(project) {
     store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
       project.id,
       "mint_upgraded_to_devnet",
-      chainMint.metadataSignature || "created-by-solana-devnet",
-      upgraded.multisig_wallet,
+      textOrFallback(chainMint.metadataSignature, "created-by-solana-devnet"),
+      textOrFallback(upgraded.multisig_wallet, "treasury"),
       `Mint demo reemplazado por SPL real ${project.token_symbol} en ${upgraded.network}. Metadata: ${chainMint.metadataAddress || "pendiente"}.`,
       now
     ]);
@@ -73,8 +77,8 @@ async function ensureProjectMint(project) {
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     project.id,
     "mint_configured",
-    realMode ? (chainMint.metadataSignature || "created-by-solana-devnet") : fakeSignature(),
-    mint.multisig_wallet,
+    realMode ? textOrFallback(chainMint.metadataSignature, "created-by-solana-devnet") : fakeSignature(),
+    textOrFallback(mint.multisig_wallet, "treasury"),
     `Mint ${project.token_symbol} configurado en ${mint.network}${chainMint && chainMint.metadataAddress ? ` con metadata ${chainMint.metadataAddress}` : ""}.`,
     now
   ]);
@@ -138,12 +142,14 @@ async function issueTokensForInvestment(investmentId) {
     ]);
   }
   store.run("UPDATE investments SET status = 'tokens_issued' WHERE id = ?", [investment.id]);
+  const issueSignature = chainIssue && chainIssue.signature ? chainIssue.signature : fakeSignature();
+  const issueTokenAccount = chainIssue && chainIssue.tokenAccount ? chainIssue.tokenAccount : "token account no reportado por la libreria SPL";
   store.run("INSERT INTO token_events (project_id, event_type, signature, authority, note, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
     investment.project_id,
     "tokens_issued",
-    chainIssue ? chainIssue.signature : fakeSignature(),
-    mint.multisig_wallet,
-    `${investment.tokens} ${investment.token_symbol} emitidos a ${wallet.address}${chainIssue ? ` en token account ${chainIssue.tokenAccount}` : ""}.`,
+    issueSignature,
+    textOrFallback(mint.multisig_wallet, "treasury"),
+    `${investment.tokens} ${investment.token_symbol} emitidos a ${wallet.address}${chainIssue ? ` en token account ${issueTokenAccount}` : ""}.`,
     now
   ]);
   return { investment, mint, wallet };

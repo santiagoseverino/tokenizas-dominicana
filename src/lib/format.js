@@ -17,6 +17,7 @@ function statusLabel(status) {
     approved: "Aprobado",
     rejected: "Rechazado",
     submitted: "Enviado",
+    review: "En revision",
     needs_more_info: "Falta informacion",
     not_started: "No iniciado"
   };

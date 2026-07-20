@@ -188,6 +188,42 @@ function migrate() {
       uploaded_at TEXT NOT NULL,
       reviewed_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS issuer_applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_name TEXT NOT NULL,
+      company_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      whatsapp TEXT,
+      country TEXT NOT NULL,
+      project_name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      location TEXT NOT NULL,
+      legal_owner TEXT NOT NULL,
+      target_raise INTEGER NOT NULL,
+      total_budget INTEGER NOT NULL,
+      budget_breakdown TEXT NOT NULL,
+      legal_structure TEXT NOT NULL,
+      permits_summary TEXT NOT NULL,
+      project_description TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'submitted',
+      internal_notes TEXT,
+      created_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS issuer_documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      application_id INTEGER NOT NULL,
+      document_type TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'submitted',
+      notes TEXT,
+      uploaded_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);

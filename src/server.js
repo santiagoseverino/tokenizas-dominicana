@@ -11,6 +11,7 @@ const registerDashboardRoutes = require("./routes/dashboard");
 const registerHomeRoutes = require("./routes/home");
 const registerInvestRoutes = require("./routes/invest");
 const registerInvestorRoutes = require("./routes/investor");
+const registerIssuerRoutes = require("./routes/issuer");
 const registerLegalRoutes = require("./routes/legal");
 const registerProjectRoutes = require("./routes/projects");
 
@@ -31,6 +32,7 @@ registerLegalRoutes(app);
 registerContactRoutes(app);
 registerProjectRoutes(app);
 registerInvestorRoutes(app);
+registerIssuerRoutes(app);
 registerInvestRoutes(app);
 registerDashboardRoutes(app);
 registerAdminRoutes(app);

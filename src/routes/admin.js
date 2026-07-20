@@ -143,6 +143,7 @@ function registerAdminRoutes(app) {
           <div class="adminActions">
             <a class="button primary small" href="/admin/projects/new">Nuevo proyecto</a>
             <a class="button small" href="/admin/kyc">KYC</a>
+            <a class="button small" href="/admin/issuers">Dueños</a>
             <a class="button small" href="/admin/tokenization">Tokenizacion</a>
             <a class="button small" href="/admin/settings">Seguridad</a>
             <a class="button danger small" href="/logout">${t.logout}</a>
@@ -362,6 +363,105 @@ function registerAdminRoutes(app) {
     });
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "updated_project", payload.title, payload.slug, new Date().toISOString()]);
     res.redirect(`/admin/projects/${project.id}`);
+  });
+
+  app.get("/admin/issuers", requireAdmin, (req, res) => {
+    const applications = store.all(`
+      SELECT a.*, COUNT(d.id) document_count
+      FROM issuer_applications a
+      LEFT JOIN issuer_documents d ON d.application_id = a.id
+      GROUP BY a.id
+      ORDER BY CASE a.status WHEN 'submitted' THEN 1 WHEN 'review' THEN 2 WHEN 'approved' THEN 3 ELSE 4 END, a.id DESC
+    `);
+    res.send(layout("Dueños de proyecto", `
+      <main class="page adminPage">
+        <div class="adminHero">
+          <div><p class="eyebrow">Origination</p><h1>Dueños de proyecto</h1><p class="muted">Solicitudes para tokenizar activos, presupuestos, permisos y documentos legales.</p></div>
+          <div class="adminActions"><a class="button small" href="/admin">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+        </div>
+        <div class="panel adminPanel tablePanel">
+          <table class="dataTable">
+            <thead><tr><th>Proyecto</th><th>Dueño</th><th>Categoria</th><th>Meta</th><th>Presupuesto</th><th>Estado</th><th>Docs</th><th></th></tr></thead>
+            <tbody>
+              ${applications.map((item) => `<tr><td>${item.project_name}<br><span class="muted">${item.location}</span></td><td>${item.owner_name}<br><span class="muted">${item.email}</span></td><td>${item.category}</td><td>${money.format(item.target_raise)}</td><td>${money.format(item.total_budget)}</td><td>${statusLabel(item.status)}</td><td>${item.document_count}</td><td><a href="/admin/issuers/${item.id}">Revisar</a></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    `, req));
+  });
+
+  app.get("/admin/issuers/:id", requireAdmin, (req, res) => {
+    const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
+    if (!application) return res.status(404).send("Solicitud no encontrada");
+    const docs = store.all("SELECT * FROM issuer_documents WHERE application_id = ? ORDER BY uploaded_at DESC", [application.id]);
+    res.send(layout(application.project_name, `
+      <main class="page adminPage">
+        <div class="adminHero">
+          <div><p class="eyebrow">Due diligence proyecto</p><h1>${application.project_name}</h1><p class="muted">${application.company_name} - ${application.owner_name} - ${statusLabel(application.status)}</p></div>
+          <div class="adminActions"><a class="button small" href="/admin/issuers">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+        </div>
+        <section class="split">
+          <form class="panel contactForm adminPanel" method="post" action="/admin/issuers/${application.id}">
+            <h3>Decision del proyecto</h3>
+            <label>Estado<select name="status">
+              ${["submitted", "review", "needs_more_info", "approved", "rejected"].map((status) => `<option value="${status}" ${application.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
+            </select></label>
+            <label>Notas internas<textarea name="internal_notes" rows="6">${application.internal_notes || ""}</textarea></label>
+            <button class="button primary" type="submit">Guardar revision</button>
+          </form>
+          <div class="panel adminPanel">
+            <h3>Resumen financiero y legal</h3>
+            <div class="fact"><span>Meta a recaudar</span><strong>${money.format(application.target_raise)}</strong></div>
+            <div class="fact"><span>Presupuesto total</span><strong>${money.format(application.total_budget)}</strong></div>
+            <div class="event"><b>Presupuesto</b><p>${application.budget_breakdown}</p></div>
+            <div class="event"><b>Estructura legal</b><p>${application.legal_structure}</p></div>
+            <div class="event"><b>Permisos</b><p>${application.permits_summary}</p></div>
+          </div>
+        </section>
+        <section class="split">
+          <div class="panel adminPanel">
+            <h3>Datos del dueño</h3>
+            <div class="fact"><span>Email</span><strong>${application.email}</strong></div>
+            <div class="fact"><span>WhatsApp</span><strong>${application.whatsapp || "pendiente"}</strong></div>
+            <div class="fact"><span>Pais</span><strong>${application.country}</strong></div>
+            <div class="fact"><span>Titular legal</span><strong>${application.legal_owner}</strong></div>
+            <div class="event"><b>Descripcion</b><p>${application.project_description}</p></div>
+          </div>
+          <div class="panel adminPanel tablePanel">
+            <h3>Documentos</h3>
+            <table class="dataTable">
+              <thead><tr><th>Tipo</th><th>Archivo</th><th>Estado</th><th></th></tr></thead>
+              <tbody>${docs.map((doc) => `<tr><td>${doc.document_type}</td><td>${doc.original_name}</td><td>${statusLabel(doc.status)}</td><td><a href="/admin/issuers/documents/${doc.id}/download">Descargar</a></td></tr>`).join("")}</tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/issuers/:id", requireAdmin, (req, res) => {
+    const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
+    if (!application) return res.status(404).send("Solicitud no encontrada");
+    const allowed = new Set(["submitted", "review", "needs_more_info", "approved", "rejected"]);
+    const status = allowed.has(req.body.status) ? req.body.status : application.status;
+    store.run("UPDATE issuer_applications SET status = ?, internal_notes = ?, reviewed_at = ? WHERE id = ?", [status, req.body.internal_notes || "", new Date().toISOString(), application.id]);
+    store.run("UPDATE issuer_documents SET status = ?, notes = ?, reviewed_at = ? WHERE application_id = ?", [
+      status === "approved" ? "approved" : status === "rejected" ? "rejected" : "submitted",
+      req.body.internal_notes || "",
+      new Date().toISOString(),
+      application.id
+    ]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'reviewed_issuer_application', ?, ?, ?)", ["Admin", application.project_name, `${status}: ${req.body.internal_notes || ""}`, new Date().toISOString()]);
+    res.redirect(`/admin/issuers/${application.id}`);
+  });
+
+  app.get("/admin/issuers/documents/:id/download", requireAdmin, (req, res) => {
+    const doc = store.get("SELECT * FROM issuer_documents WHERE id = ?", [req.params.id]);
+    if (!doc) return res.status(404).send("Documento no encontrado");
+    const absolutePath = path.join(__dirname, "..", "..", "private", doc.file_path.replace(/^\/issuer\//, "issuer/"));
+    if (!fs.existsSync(absolutePath)) return res.status(404).send("Archivo no encontrado");
+    res.download(absolutePath, doc.original_name);
   });
 
   app.get("/admin/kyc", requireAdmin, (req, res) => {

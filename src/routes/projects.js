@@ -29,7 +29,7 @@ function renderProjectGridPage(req, { title, eyebrow, subtitle, projects }) {
         <h1>${title}</h1>
         <p class="muted">${subtitle}</p>
       </div>
-      <div class="grid cards">${projects.map(projectCard).join("") || `<p class="muted">${tr(req).projectPages.empty}</p>`}</div>
+      <div class="grid cards">${projects.map((project) => projectCard(project, req)).join("") || `<p class="muted">${tr(req).projectPages.empty}</p>`}</div>
     </main>
   `, req);
 }

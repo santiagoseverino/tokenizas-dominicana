@@ -49,7 +49,7 @@ function registerHomeRoutes(app) {
             <p class="eyebrow">${t.pipeline}</p>
             <h2>${t.readyAssets}</h2>
           </div>
-          <div class="grid cards">${projects.map(projectCard).join("")}</div>
+          <div class="grid cards">${projects.map((project) => projectCard(project, req)).join("")}</div>
         </section>
         <section class="section featureBand">
           <div class="sectionHead">

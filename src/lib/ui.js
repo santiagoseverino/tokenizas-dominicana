@@ -49,18 +49,20 @@ function layout(title, body, req) {
   </html>`;
 }
 
-function projectCard(project) {
+function projectCard(project, req) {
+  const t = req ? tr(req) : tr({ query: {}, cookies: {} });
+  const projectText = t.projectPages || {};
   return `<article class="card">
     <img src="${project.image_url}" alt="${project.title}" />
     <div class="cardBody">
-      <div class="pill">${statusLabel(project.status)}</div>
+      <div class="pill">${statusLabel(project.status, req)}</div>
       <h3>${project.title}</h3>
       <p>${project.location}</p>
       <div class="cardStats">
-        <span>${money.format(project.min_investment)} min.</span>
-        <span>${project.expected_yield}% yield</span>
+        <span>${money.format(project.min_investment)} ${projectText.minimum || "Minimo"}</span>
+        <span>${project.expected_yield}% ${projectText.expectedYield || "Yield esperado"}</span>
       </div>
-      <a class="button small" href="/projects/${project.slug}">Abrir</a>
+      <a class="button small" href="/projects/${project.slug}">${projectText.open || t.viewProjects}</a>
     </div>
   </article>`;
 }

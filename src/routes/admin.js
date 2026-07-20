@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const store = require("../db");
+const config = require("../config");
 const { getAdminCredentials, hashPassword, requireAdmin, verifyPassword } = require("../middleware/auth");
 const { toCsv } = require("../lib/csv");
 const { tr } = require("../lib/i18n");
@@ -47,6 +48,11 @@ function saveProjectImage(file, slug) {
   const filename = `${slug}-${Date.now()}${extension}`;
   fs.writeFileSync(path.join(uploadDir, filename), file.buffer);
   return `/uploads/${filename}`;
+}
+
+function solanaExplorerAddress(address) {
+  const cluster = config.solanaCluster === "mainnet-beta" ? "" : `?cluster=${config.solanaCluster}`;
+  return `https://explorer.solana.com/address/${address}${cluster}`;
 }
 
 function projectForm(project = {}, offering = {}, error = "") {
@@ -604,12 +610,12 @@ function registerAdminRoutes(app) {
               <div>
                 <span class="statusBadge">${project.mint_status || "pending"}</span>
                 <h4>${project.title}</h4>
-                <p>${project.token_symbol} · Supply ${project.token_supply}</p>
+                <p>${project.token_symbol} - Supply ${project.token_supply}</p>
                 <span class="monoBreak">Mint: ${project.mint_address || "No configurado"}</span>
                 <span class="monoBreak">Authority: ${project.multisig_wallet || "Pendiente"}</span>
               </div>
               <div class="mintActions">
-                ${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}
+                ${project.mint_address ? `<span class="statusBadge">Mint creado</span><a class="button primary" href="${solanaExplorerAddress(project.mint_address)}" target="_blank" rel="noopener">Ver mint en Solana Explorer</a>` : `<a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}
               </div>
             </article>`).join("")}
           </div>

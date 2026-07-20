@@ -390,7 +390,9 @@ h3 { font-size: 21px; }
 }
 .mintActions {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 10px;
 }
 .mintActions .button {
   width: 100%;

@@ -9,6 +9,7 @@ function langSwitcher(req) {
 
 function layout(title, body, req) {
   const t = req ? tr(req) : tr({ query: {}, cookies: {} });
+  const categories = t.categoryLabels || {};
   return `<!doctype html>
   <html lang="${req ? getLang(req) : "es"}">
     <head>
@@ -25,18 +26,18 @@ function layout(title, body, req) {
           <div class="navDrop">
             <a href="/projects">${t.projects}</a>
             <div class="dropMenu">
-              <a href="/projects?category=real-estate">Bienes raices</a>
-              <a href="/projects?category=agriculture">Agricultura</a>
-              <a href="/projects?category=art">Arte</a>
-              <a href="/projects?category=music">Musica</a>
-              <a href="/projects?category=tourism">Turismo</a>
-              <a href="/projects?category=business">Negocios</a>
-              <a href="/projects?category=energy">Energia</a>
+              <a href="/projects?category=real-estate">${categories["real-estate"]}</a>
+              <a href="/projects?category=agriculture">${categories.agriculture}</a>
+              <a href="/projects?category=art">${categories.art}</a>
+              <a href="/projects?category=music">${categories.music}</a>
+              <a href="/projects?category=tourism">${categories.tourism}</a>
+              <a href="/projects?category=business">${categories.business}</a>
+              <a href="/projects?category=energy">${categories.energy}</a>
             </div>
           </div>
           <a href="/marketplace">Marketplace</a>
           <a href="/invest">${t.invest}</a>
-          <a href="/issuer/apply">Tokenizar</a>
+          <a href="/issuer/apply">${t.tokenize}</a>
           <a href="/investor">${t.dashboard}</a>
           <a href="/legal">${t.legal}</a>
           <a href="/contact">${t.contact}</a>

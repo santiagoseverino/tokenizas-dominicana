@@ -6,7 +6,14 @@ const money = new Intl.NumberFormat("en-US", {
 
 const number = new Intl.NumberFormat("en-US");
 
-function statusLabel(status) {
+function statusLabel(status, req) {
+  if (req) {
+    try {
+      const { tr } = require("./i18n");
+      const labels = tr(req).statusLabels || {};
+      if (labels[status]) return labels[status];
+    } catch (_) {}
+  }
   const labels = {
     open: "Abierto",
     due_diligence: "Due diligence",

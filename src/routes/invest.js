@@ -1,5 +1,6 @@
 const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
+const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
 
 function registerInvestRoutes(app) {
@@ -12,24 +13,25 @@ function registerInvestRoutes(app) {
       ORDER BY CASE p.status WHEN 'open' THEN 1 WHEN 'due_diligence' THEN 2 ELSE 3 END, p.id
     `);
     const defaultProject = projects.find((project) => project.status === "open") || projects[0];
+    const t = tr(req);
     res.send(layout("Invertir", `
       <main class="page">
-        <div class="sectionHead"><p class="eyebrow">Orden de prueba</p><h1>Crear una inversion tokenizada</h1><p class="muted">Selecciona un proyecto, monto y metodo de pago. Esta pantalla simula la reserva y emision operativa para pruebas.</p></div>
-        ${currentInvestor(req) ? "" : `<div class="alert">Para crear una orden necesitas una cuenta de inversionista. <a href="/investor/register">Crear cuenta</a> o <a href="/investor/login">entrar</a>.</div>`}
+        <div class="sectionHead"><p class="eyebrow">${t.createOrder}</p><h1>${t.investor.createOrder}</h1><p class="muted">${t.investor.loginLead}</p></div>
+        ${currentInvestor(req) ? "" : `<div class="alert">${t.investor.noAccount} <a href="/investor/register">${t.investor.register}</a> / <a href="/investor/login">${t.investor.login}</a>.</div>`}
         <section class="investPage">
           <form class="panel investPanel" method="post" action="/invest">
-            <h2>Nueva orden</h2>
-            <label>Proyecto<select name="project_id">${projects.map((project) => `<option value="${project.id}" ${defaultProject && defaultProject.id === project.id ? "selected" : ""}>${project.title} - ${project.token_symbol}</option>`).join("")}</select></label>
-            <label>Monto a invertir<input name="amount" type="number" min="100" step="100" value="${defaultProject ? defaultProject.min_investment : 1000}" /></label>
-            <label>Metodo de pago<select name="payment_method"><option>USDC Solana</option><option>Transferencia bancaria</option></select></label>
-            <label>Nota para cumplimiento<textarea name="investor_note" rows="4" placeholder="Origen estimado de fondos, objetivo de inversion o comentario para el equipo."></textarea></label>
-            <button class="button primary" type="submit">Crear orden</button>
+            <h2>${t.createOrder}</h2>
+            <label>${t.projects}<select name="project_id">${projects.map((project) => `<option value="${project.id}" ${defaultProject && defaultProject.id === project.id ? "selected" : ""}>${project.title} - ${project.token_symbol}</option>`).join("")}</select></label>
+            <label>${t.targetCapital}<input name="amount" type="number" min="100" step="100" value="${defaultProject ? defaultProject.min_investment : 1000}" /></label>
+            <label>${t.status}<select name="payment_method"><option>USDC Solana</option><option>Bank transfer</option></select></label>
+            <label>KYC<textarea name="investor_note" rows="4" placeholder="${t.investor.missingDocs}"></textarea></label>
+            <button class="button primary" type="submit">${t.createOrder}</button>
           </form>
           <div class="panel">
-            <h2>Proyectos disponibles</h2>
+            <h2>${t.projects}</h2>
             ${projects.map((project) => {
               const raisedPct = project.hard_cap ? Math.min(100, Math.round((project.raised / project.hard_cap) * 100)) : 0;
-              return `<article class="miniProject"><img src="${project.image_url}" alt="${project.title}" /><div><div class="pill">${statusLabel(project.status)}</div><h3>${project.title}</h3><p>${project.location}</p><div class="progress"><span style="width:${raisedPct}%"></span></div><p class="muted">${money.format(project.raised || 0)} de ${money.format(project.hard_cap || project.target_raise)} reservados.</p><a href="/projects/${project.slug}">Ver detalle</a></div></article>`;
+              return `<article class="miniProject"><img src="${project.image_url}" alt="${project.title}" /><div><div class="pill">${statusLabel(project.status, req)}</div><h3>${project.title}</h3><p>${project.location}</p><div class="progress"><span style="width:${raisedPct}%"></span></div><p class="muted">${money.format(project.raised || 0)} / ${money.format(project.hard_cap || project.target_raise)} ${t.reservedCapital}.</p><a href="/projects/${project.slug}">${t.viewProjects}</a></div></article>`;
             }).join("")}
           </div>
         </section>

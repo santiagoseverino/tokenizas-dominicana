@@ -84,6 +84,7 @@ function renderTokenEvent(event) {
 }
 
 function renderIssuedInvestment(item) {
+  const paymentStatus = item.payment_status === "received" || item.payment_signature || item.status === "tokens_issued" ? "recibido" : item.payment_status || "pendiente";
   const paymentLink = looksLikeSolanaSignature(item.payment_signature)
     ? `<a class="button small" href="${solanaExplorerTx(item.payment_signature)}" target="_blank" rel="noopener">Ver pago</a>`
     : "";
@@ -93,7 +94,7 @@ function renderIssuedInvestment(item) {
   const mintLink = item.issue_mint_address && isValidSolanaAddress(item.issue_mint_address)
     ? `<a class="button small" href="${solanaExplorerAddress(item.issue_mint_address)}" target="_blank" rel="noopener">Ver mint</a>`
     : "";
-  return `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${item.payment_status || "recibido"}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issue_signature ? ` - Emision: ${item.issue_signature}` : ""}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p>${item.issue_mint_address ? `<span class="monoBreak">Mint: ${item.issue_mint_address}</span>` : ""}${item.issue_token_account ? `<span class="monoBreak">Token account: ${item.issue_token_account}</span>` : ""}<div class="inlineActions">${paymentLink}${issueLink}${mintLink}</div></div>`;
+  return `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${paymentStatus}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issue_signature ? ` - Emision: ${item.issue_signature}` : ""}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p>${item.issue_mint_address ? `<span class="monoBreak">Mint: ${item.issue_mint_address}</span>` : ""}${item.issue_token_account ? `<span class="monoBreak">Token account: ${item.issue_token_account}</span>` : ""}<div class="inlineActions">${paymentLink}${issueLink}${mintLink}</div></div>`;
 }
 
 function projectForm(project = {}, offering = {}, error = "") {

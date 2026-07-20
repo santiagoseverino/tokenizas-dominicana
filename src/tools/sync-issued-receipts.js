@@ -8,7 +8,10 @@ const store = require("../db");
     JOIN projects p ON p.id = i.project_id
     LEFT JOIN token_mints tm ON tm.project_id = p.id
     WHERE i.status = 'tokens_issued'
-      AND (i.issue_signature IS NULL OR i.issue_signature = '')
+      AND (
+        i.issue_signature IS NULL OR i.issue_signature = ''
+        OR i.payment_status IS NULL OR i.payment_status != 'received'
+      )
     ORDER BY i.id
   `);
   let updated = 0;
@@ -29,7 +32,9 @@ const store = require("../db");
       SET issue_signature = ?,
           issue_token_account = ?,
           issue_mint_address = ?,
-          issued_at = COALESCE(issued_at, ?)
+          issued_at = COALESCE(issued_at, ?),
+          payment_status = 'received',
+          payment_received_at = COALESCE(payment_received_at, created_at)
       WHERE id = ?
     `, [
       event.signature,

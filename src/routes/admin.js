@@ -488,9 +488,9 @@ function registerAdminRoutes(app) {
         </div>
         <div class="panel adminPanel tablePanel">
           <table class="dataTable">
-            <thead><tr><th>Inversionista</th><th>Email</th><th>Pais</th><th>Wallet</th><th>KYC</th><th>Docs</th><th></th></tr></thead>
+            <thead><tr><th>Inversionista</th><th>Email</th><th>Telefono</th><th>Pais</th><th>Wallet</th><th>KYC</th><th>Docs</th><th></th></tr></thead>
             <tbody>
-              ${investors.map((user) => `<tr><td>${user.name}</td><td>${user.email}</td><td>${user.country}</td><td>${user.wallet || "pendiente"}</td><td>${statusLabel(user.kyc_status)}</td><td>${user.document_count}</td><td><a href="/admin/kyc/${user.id}">Revisar</a></td></tr>`).join("")}
+              ${investors.map((user) => `<tr><td>${user.name}</td><td>${user.email}</td><td>${user.phone || "pendiente"}</td><td>${user.country}</td><td>${user.wallet || "pendiente"}</td><td>${statusLabel(user.kyc_status)}</td><td>${user.document_count}</td><td><a href="/admin/kyc/${user.id}">Revisar</a></td></tr>`).join("")}
             </tbody>
           </table>
         </div>
@@ -511,7 +511,7 @@ function registerAdminRoutes(app) {
     res.send(layout(`KYC ${user.name}`, `
       <main class="page adminPage">
         <div class="adminHero">
-          <div><p class="eyebrow">Expediente KYC</p><h1>${user.name}</h1><p class="muted">${user.email} - ${user.country} - ${statusLabel(user.kyc_status)}</p></div>
+          <div><p class="eyebrow">Expediente KYC</p><h1>${user.name}</h1><p class="muted">${user.email} - ${user.phone || "sin telefono"} - ${user.country} - ${statusLabel(user.kyc_status)}</p></div>
           <div class="adminActions"><a class="button small" href="/admin/kyc">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
         </div>
         <section class="split">
@@ -524,6 +524,11 @@ function registerAdminRoutes(app) {
             <button class="button primary" type="submit">Guardar decision</button>
           </form>
           <div class="panel adminPanel">
+            <h3>Verificaciones</h3>
+            <div class="fact"><span>Email</span><strong>${statusLabel(user.email_verified ? "approved" : "submitted")}</strong></div>
+            <div class="fact"><span>Telefono</span><strong>${statusLabel(user.phone_verified ? "approved" : "submitted")}</strong></div>
+            <div class="fact"><span>Cedula / pasaporte</span><strong>${statusLabel(user.identity_verified ? "approved" : (user.identity_check_status || "pending"))}</strong></div>
+            <p class="muted">La validacion legal de cedula/pasaporte queda registrada por compliance. Para produccion debe conectarse un proveedor KYC o una verificacion documental autorizada.</p>
             <h3>Ordenes del inversionista</h3>
             ${investments.map((item) => `<div class="event"><b>${item.title}</b><span>${money.format(item.amount)} - ${item.tokens} ${item.token_symbol}</span><p>${statusLabel(item.status)}${item.investor_note ? ` - ${item.investor_note}` : ""}</p></div>`).join("") || "<p class=\"muted\">Sin ordenes.</p>"}
           </div>
@@ -546,7 +551,14 @@ function registerAdminRoutes(app) {
     if (!user) return res.status(404).send("Inversionista no encontrado");
     const allowed = new Set(["not_started", "submitted", "needs_more_info", "approved", "rejected"]);
     const status = allowed.has(req.body.kyc_status) ? req.body.kyc_status : user.kyc_status;
-    store.run("UPDATE users SET kyc_status = ? WHERE id = ?", [status, user.id]);
+    store.run("UPDATE users SET kyc_status = ?, email_verified = ?, phone_verified = ?, identity_verified = ?, identity_check_status = ? WHERE id = ?", [
+      status,
+      status === "approved" ? 1 : user.email_verified || 0,
+      status === "approved" ? 1 : user.phone_verified || 0,
+      status === "approved" ? 1 : 0,
+      status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending",
+      user.id
+    ]);
     store.run("UPDATE kyc_documents SET status = ?, notes = ?, reviewed_at = ? WHERE user_id = ?", [
       status === "approved" ? "approved" : status === "rejected" ? "rejected" : "submitted",
       req.body.notes || "",

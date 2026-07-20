@@ -30,6 +30,7 @@ function authForm(req, mode, error = "") {
         ${isRegister ? `
           <label>${t.fullName}<input name="name" autocomplete="name" required /></label>
           <label>${t.residenceCountry}<input name="country" value="Republica Dominicana" required /></label>
+          <label>${t.phoneNumber}<input name="phone" type="tel" autocomplete="tel" placeholder="+1 809 000 0000" required /></label>
           <label>${t.solanaWallet}<input name="wallet" placeholder="${t.optionalNow}" /></label>
         ` : ""}
         <label>Email<input name="email" type="email" autocomplete="email" required /></label>
@@ -80,13 +81,18 @@ function renderPortal(req, message = "") {
   docs.forEach((doc) => requiredTypes.delete(doc.document_type));
   const d = tr(req).dashboardText;
   const activeInvestments = investments.filter((item) => item.status !== "canceled");
+  const verificationItems = [
+    [t.emailVerification, user.email_verified ? "approved" : "submitted"],
+    [t.phoneVerification, user.phone_verified ? "approved" : "submitted"],
+    [t.identityVerification, user.identity_verified ? "approved" : (user.identity_check_status || "pending")]
+  ];
   return layout(t.portal, `
     <main class="page investorPage">
       <div class="adminHero">
         <div>
           <p class="eyebrow">${t.portal}</p>
           <h1>${user.name}</h1>
-          <p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - ${tr(req).wallet}: ${user.wallet || tr(req).dashboardText.pending}</p>
+          <p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - Email: ${user.email} - ${t.phoneNumber}: ${user.phone || tr(req).dashboardText.pending}</p>
         </div>
         <div class="adminActions">
           <a class="button primary small" href="/invest">${t.createOrder}</a>
@@ -100,6 +106,9 @@ function renderPortal(req, message = "") {
         <article><strong>${money.format(activeInvestments.reduce((sum, item) => sum + item.amount, 0))}</strong><span>${t.reserved}</span></article>
         <article><strong>${number.format(activeInvestments.reduce((sum, item) => sum + item.tokens, 0))}</strong><span>Tokens</span></article>
         <article><strong>${docs.length}/5</strong><span>${t.kycDocuments}</span></article>
+      </section>
+      <section class="verificationGrid">
+        ${verificationItems.map(([label, status]) => `<article class="verifyItem"><span>${label}</span><strong>${statusLabel(status, req)}</strong></article>`).join("")}
       </section>
       <section class="split">
         <div class="panel adminPanel">
@@ -126,16 +135,18 @@ function registerInvestorRoutes(app) {
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
     const country = String(req.body.country || "").trim();
+    const phone = String(req.body.phone || "").trim();
     const wallet = String(req.body.wallet || "").trim();
     const password = String(req.body.password || "");
-    if (!name || !email || !country || password.length < 10) return res.status(400).send(authForm(req, "register", tr(req).investor.completeFields));
+    if (!name || !email || !country || !phone || password.length < 10) return res.status(400).send(authForm(req, "register", tr(req).investor.completeFields));
     if (store.get("SELECT id FROM users WHERE email = ?", [email])) return res.status(400).send(authForm(req, "register", tr(req).investor.emailExists));
-    store.run("INSERT INTO users (name, email, role, country, kyc_status, wallet, password_hash, created_at) VALUES (?, ?, 'investor', ?, 'not_started', ?, ?, ?)", [
+    store.run("INSERT INTO users (name, email, role, country, kyc_status, wallet, password_hash, phone, email_verified, phone_verified, identity_verified, identity_check_status, created_at) VALUES (?, ?, 'investor', ?, 'not_started', ?, ?, ?, 0, 0, 0, 'pending', ?)", [
       name,
       email,
       country,
       wallet || null,
       hashPassword(password),
+      phone,
       new Date().toISOString()
     ]);
     const user = store.get("SELECT * FROM users WHERE email = ?", [email]);
@@ -168,6 +179,7 @@ function registerInvestorRoutes(app) {
     const docs = store.all("SELECT * FROM kyc_documents WHERE user_id = ? ORDER BY uploaded_at DESC", [req.investor.id]);
     const t = tr(req).investor;
     const docTypes = documentTypes(req);
+    const uploadedTypes = new Set(docs.map((doc) => doc.document_type));
     res.send(layout("KYC", `
       <main class="page investorPage">
         <div class="adminHero">
@@ -177,11 +189,16 @@ function registerInvestorRoutes(app) {
         <section class="split">
           <form class="panel contactForm adminPanel" method="post" enctype="multipart/form-data" action="/investor/kyc">
             <h3>${t.uploadDocument}</h3>
+            <p class="muted">${t.kycChecklistLead}</p>
             <label>${t.documentType}<select name="document_type">${docTypes.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label>
             <label>${tr(req).file}<input name="kyc_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required /></label>
             <button class="button primary" type="submit">${t.uploadDocument}</button>
           </form>
           <div class="panel adminPanel">
+            <h3>${t.requiredChecklist}</h3>
+            <div class="kycChecklist">
+              ${docTypes.map(([value, label]) => `<div class="checkItem ${uploadedTypes.has(value) ? "done" : ""}"><b>${label}</b><span>${uploadedTypes.has(value) ? t.received : t.pending}</span></div>`).join("")}
+            </div>
             <h3>${t.sentDocuments}</h3>
             ${docs.map((doc) => `<div class="event"><b>${docTypes.find((item) => item[0] === doc.document_type)?.[1] || doc.document_type}</b><span>${doc.original_name}</span><p>${statusLabel(doc.status, req)}</p></div>`).join("") || `<p class="muted">${t.noDocumentsYet}</p>`}
           </div>

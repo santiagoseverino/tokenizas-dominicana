@@ -129,13 +129,15 @@ async function mintTokensOnTestnet({ mintAddress, recipientAddress, amount }) {
   const mint = new web3.PublicKey(mintAddress);
   const owner = new web3.PublicKey(recipientAddress);
   const tokenAccount = await spl.getOrCreateAssociatedTokenAccount(connection, payer, mint, owner);
+  const baseUnits = BigInt(Math.round(Number(amount) * (10 ** config.solanaTokenDecimals)));
+  if (baseUnits <= 0n) throw new Error("La cantidad de tokens debe ser mayor que cero.");
   const signature = await spl.mintTo(
     connection,
     payer,
     mint,
     tokenAccount.address,
     payer,
-    BigInt(amount)
+    baseUnits
   );
   return {
     signature,

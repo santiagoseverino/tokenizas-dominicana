@@ -1,10 +1,12 @@
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
-  maximumFractionDigits: 0
+  maximumFractionDigits: 2
 });
 
-const number = new Intl.NumberFormat("en-US");
+const number = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 6
+});
 
 function statusLabel(status, req) {
   if (req) {
@@ -21,6 +23,7 @@ function statusLabel(status, req) {
     tokens_issued: "Tokens emitidos",
     compliance_review: "Revision compliance",
     pending_payment: "Pago pendiente",
+    pending: "Pendiente",
     approved: "Aprobado",
     rejected: "Rechazado",
     submitted: "Enviado",

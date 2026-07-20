@@ -34,6 +34,11 @@ function migrate() {
       kyc_status TEXT NOT NULL,
       wallet TEXT,
       password_hash TEXT,
+      phone TEXT,
+      email_verified INTEGER NOT NULL DEFAULT 0,
+      phone_verified INTEGER NOT NULL DEFAULT 0,
+      identity_verified INTEGER NOT NULL DEFAULT 0,
+      identity_check_status TEXT NOT NULL DEFAULT 'pending',
       created_at TEXT NOT NULL
     );
 
@@ -232,6 +237,21 @@ function migrate() {
   const investmentColumns = all("PRAGMA table_info(investments)").map((column) => column.name);
   if (!userColumns.includes("password_hash")) {
     db.run("ALTER TABLE users ADD COLUMN password_hash TEXT");
+  }
+  if (!userColumns.includes("phone")) {
+    db.run("ALTER TABLE users ADD COLUMN phone TEXT");
+  }
+  if (!userColumns.includes("email_verified")) {
+    db.run("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!userColumns.includes("phone_verified")) {
+    db.run("ALTER TABLE users ADD COLUMN phone_verified INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!userColumns.includes("identity_verified")) {
+    db.run("ALTER TABLE users ADD COLUMN identity_verified INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!userColumns.includes("identity_check_status")) {
+    db.run("ALTER TABLE users ADD COLUMN identity_check_status TEXT NOT NULL DEFAULT 'pending'");
   }
   if (!investmentColumns.includes("investor_note")) {
     db.run("ALTER TABLE investments ADD COLUMN investor_note TEXT");

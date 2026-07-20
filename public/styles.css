@@ -630,6 +630,41 @@ textarea {
 .event b, .event span { display: block; }
 .event span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .event p { margin: 7px 0 0; color: var(--muted); }
+.verificationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: -10px 0 28px;
+}
+.verifyItem,
+.checkItem {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 14px 16px;
+}
+.verifyItem span,
+.checkItem span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+.verifyItem strong,
+.checkItem b {
+  display: block;
+  color: var(--ink);
+  margin-top: 4px;
+}
+.kycChecklist {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.checkItem.done {
+  border-color: rgba(0, 180, 150, .35);
+  background: #f0fffb;
+}
 .portfolio { display: grid; gap: 14px; }
 .holding {
   display: grid;
@@ -664,7 +699,7 @@ textarea {
   .actions { margin-top: 22px; }
   .actions .button { width: 100%; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview { grid-template-columns: 1fr; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview, .verificationGrid { grid-template-columns: 1fr; }
   .section, .page, .detailGrid, .split { padding: 28px 18px; }
   .contactPage { padding-top: 0; }
   .contactIntro { padding: 36px 0; }

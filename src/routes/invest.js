@@ -4,6 +4,12 @@ const { tr } = require("../lib/i18n");
 const { localizeProjects } = require("../lib/project-content");
 const { layout, money, statusLabel } = require("../lib/ui");
 
+function formatTokenInput(project) {
+  if (!project) return "0.005";
+  const suggested = Math.max(0.005, Number((project.min_investment / project.token_price).toFixed(6)));
+  return suggested < 1 ? suggested.toString() : "1";
+}
+
 function registerInvestRoutes(app) {
   app.get("/invest", (req, res) => {
     const projects = localizeProjects(store.all(`
@@ -39,9 +45,10 @@ function registerInvestRoutes(app) {
           <form class="panel investPanel" method="post" action="/invest">
             <h2>${t.createOrder}</h2>
             <label>${t.projects}<select name="project_id">${projects.map((project) => `<option value="${project.id}" ${defaultProject && defaultProject.id === project.id ? "selected" : ""}>${project.title} - ${project.token_symbol}</option>`).join("")}</select></label>
-            <label>${t.targetCapital}<input name="amount" type="number" min="100" step="100" value="${defaultProject ? defaultProject.min_investment : 1000}" /></label>
+            <label>${t.projectPages.tokenQuantity}<input name="tokens" type="number" min="0.001" step="0.001" value="${formatTokenInput(defaultProject)}" /></label>
+            <p class="muted">${t.projectPages.fractionalHint}</p>
             <label>${t.status}<select name="payment_method"><option>${t.paymentMethods.usdc}</option><option>${t.paymentMethods.bank}</option></select></label>
-            <label>KYC<textarea name="investor_note" rows="4" placeholder="${t.investor.missingDocs}"></textarea></label>
+            <label>KYC<textarea name="investor_note" rows="4" placeholder="${t.investor.orderKycNote}"></textarea></label>
             <button class="button primary" type="submit">${t.createOrder}</button>
           </form>
           <div class="panel">
@@ -60,9 +67,9 @@ function registerInvestRoutes(app) {
     const user = currentInvestor(req);
     if (!user) return res.redirect("/investor/login");
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.body.project_id]);
-    const amount = Number(req.body.amount || 0);
-    if (!project || amount < project.min_investment) return res.status(400).send(tr(req).invalidOrder || "Invalid order");
-    const tokens = Math.floor(amount / project.token_price);
+    const tokens = Number(req.body.tokens || req.body.amount / (project ? project.token_price : 1) || 0);
+    const amount = project ? Number((tokens * project.token_price).toFixed(6)) : 0;
+    if (!project || !Number.isFinite(tokens) || tokens < 0.001 || amount <= 0) return res.status(400).send(tr(req).invalidOrder || "Invalid order");
     const status = user.kyc_status === "approved" ? "pending_payment" : "compliance_review";
     store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, investor_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [user.id, project.id, amount, tokens, req.body.payment_method, status, req.body.investor_note || "", new Date().toISOString()]);
     const investment = store.get("SELECT id FROM investments WHERE user_id = ? AND project_id = ? ORDER BY id DESC LIMIT 1", [user.id, project.id]);

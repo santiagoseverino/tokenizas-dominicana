@@ -45,10 +45,10 @@ Copia el `PUBLIC` y pide SOL gratis en el faucet de Solana usando la red devnet.
 SOLANA_CLUSTER=devnet
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_PAYER_SECRET_KEY=[12,34,...64 numeros en total...]
-SOLANA_TOKEN_DECIMALS=0
+SOLANA_TOKEN_DECIMALS=6
 ```
 
-`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON completo de la llave privada, con 64 numeros. Esa wallet sera la autoridad del mint y pagara las transacciones. Verifica la configuracion:
+`SOLANA_PAYER_SECRET_KEY` debe ser el arreglo JSON completo de la llave privada, con 64 numeros. Esa wallet sera la autoridad del mint y pagara las transacciones. Usa `SOLANA_TOKEN_DECIMALS=6` para permitir compras fraccionarias como `0.005` token. Verifica la configuracion:
 
 ```bash
 npm run solana:check

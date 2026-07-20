@@ -111,7 +111,8 @@ function registerProjectRoutes(app) {
             <p class="muted">${money.format(offering.raised)} ${t.reservedOf} ${money.format(offering.hard_cap)}.</p>
             <form class="investForm" method="post" action="/invest">
               <input type="hidden" name="project_id" value="${project.id}" />
-              <label>${t.investAmount}<input name="amount" type="number" min="${project.min_investment}" step="100" value="${project.min_investment}" /></label>
+              <label>${t.tokenQuantity}<input name="tokens" type="number" min="0.001" step="0.001" value="0.005" /></label>
+              <p class="muted">${t.tokenPrice}: ${money.format(project.token_price)}. ${t.fractionalHint}</p>
               <label>${t.paymentMethod}<select name="payment_method"><option>${tr(req).paymentMethods.usdc}</option><option>${tr(req).paymentMethods.bank}</option></select></label>
               <button class="button primary" type="submit">${t.testOrder}</button>
             </form>

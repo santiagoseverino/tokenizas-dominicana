@@ -28,7 +28,7 @@ function registerHomeRoutes(app) {
           <div class="heroOverlay"></div>
           <div class="heroContent">
             <p class="eyebrow">${t.heroEyebrow}</p>
-            <h1>${t.heroTitle}</h1>
+            <h1 class="homeHeroTitle">${t.heroTitle}</h1>
             <p class="lead">${t.heroLead}</p>
             <div class="actions">
               <a class="button primary" href="/projects">${t.viewProjects}</a>

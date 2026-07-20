@@ -254,6 +254,13 @@ h3 { font-size: 21px; }
   font-size: 34px;
   margin-bottom: 0;
 }
+.authLinks {
+  display: grid;
+  gap: 4px;
+}
+.authLinks p {
+  margin: 0;
+}
 .investorGate .actions {
   margin-top: 4px;
 }

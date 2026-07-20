@@ -72,6 +72,30 @@ function confirmationEmailText(lead, t) {
   ].join("\n");
 }
 
+function passwordResetEmailHtml({ name, resetUrl }) {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#082f49;line-height:1.5">
+      <h2>Recuperar acceso a Tokenizas Dominicana</h2>
+      <p>Hola ${name || "inversionista"}, recibimos una solicitud para cambiar tu clave.</p>
+      <p>Este enlace vence en 30 minutos:</p>
+      <p><a href="${resetUrl}" style="display:inline-block;background:#06b6d4;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Cambiar mi clave</a></p>
+      <p>Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+    </div>
+  `;
+}
+
+function passwordResetEmailText({ name, resetUrl }) {
+  return [
+    "Recuperar acceso a Tokenizas Dominicana",
+    "",
+    `Hola ${name || "inversionista"}, recibimos una solicitud para cambiar tu clave.`,
+    "Este enlace vence en 30 minutos:",
+    resetUrl,
+    "",
+    "Si no solicitaste este cambio, puedes ignorar este mensaje."
+  ].join("\n");
+}
+
 function createTransporter() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -118,4 +142,19 @@ async function notifyLead(lead, t) {
   };
 }
 
-module.exports = { notifyLead };
+async function sendPasswordReset(user, resetUrl) {
+  if (!smtpConfigured()) return { sent: false, reason: "smtp_not_configured" };
+  const transporter = createTransporter();
+  const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
+  const info = await transporter.sendMail({
+    from,
+    to: user.email,
+    replyTo: process.env.ADMIN_NOTIFY_EMAIL,
+    subject: "Recuperar acceso a Tokenizas Dominicana",
+    text: passwordResetEmailText({ name: user.name, resetUrl }),
+    html: passwordResetEmailHtml({ name: user.name, resetUrl })
+  });
+  return { sent: true, messageId: info.messageId };
+}
+
+module.exports = { notifyLead, sendPasswordReset, smtpConfigured };

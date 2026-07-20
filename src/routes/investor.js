@@ -1,8 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const store = require("../db");
 const { currentInvestor, hashPassword, investorSessionCookieValue, requireInvestor, verifyPassword } = require("../middleware/auth");
 const { readForm } = require("../lib/multipart");
+const { sendPasswordReset } = require("../lib/notifications");
 const { tr } = require("../lib/i18n");
 const { localizeProjects } = require("../lib/project-content");
 const { layout, money, number, statusLabel } = require("../lib/ui");
@@ -36,7 +38,52 @@ function authForm(req, mode, error = "") {
         <label>Email<input name="email" type="email" autocomplete="email" required /></label>
         <label>${tr(req).password}<input name="password" type="password" minlength="10" autocomplete="${isRegister ? "new-password" : "current-password"}" required /></label>
         <button class="button primary" type="submit">${isRegister ? t.register : t.login}</button>
-        <p class="muted">${isRegister ? t.alreadyAccount : t.noAccount} <a href="${isRegister ? "/investor/login" : "/investor/register"}">${isRegister ? t.login : t.register}</a></p>
+        <div class="authLinks">
+          <p class="muted">${isRegister ? t.alreadyAccount : t.noAccount} <a href="${isRegister ? "/investor/login" : "/investor/register"}">${isRegister ? t.login : t.register}</a></p>
+          ${!isRegister ? `<p class="muted"><a href="/investor/forgot">${t.forgotAccess}</a></p>` : ""}
+        </div>
+      </form>
+    </main>
+  `, req);
+}
+
+function resetTokenHash(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function forgotForm(req, message = "", error = "") {
+  const t = tr(req).investor;
+  return layout(t.forgotAccess, `
+    <main class="authPage">
+      <form class="panel loginPanel" method="post" action="/investor/forgot">
+        <div class="loginMark">INV</div>
+        <p class="eyebrow">${t.portal}</p>
+        <h1>${t.forgotAccess}</h1>
+        <p class="muted">${t.forgotLead}</p>
+        ${message ? `<div class="success">${message}</div>` : ""}
+        ${error ? `<div class="alert">${error}</div>` : ""}
+        <label>Email<input name="email" type="email" autocomplete="email" required /></label>
+        <button class="button primary" type="submit">${t.sendRecovery}</button>
+        <p class="muted"><a href="/investor/login">${t.login}</a> · <a href="/investor/register">${t.register}</a></p>
+      </form>
+    </main>
+  `, req);
+}
+
+function resetForm(req, token, error = "") {
+  const t = tr(req).investor;
+  return layout(t.resetPassword, `
+    <main class="authPage">
+      <form class="panel loginPanel" method="post" action="/investor/reset">
+        <div class="loginMark">INV</div>
+        <p class="eyebrow">${t.portal}</p>
+        <h1>${t.resetPassword}</h1>
+        <p class="muted">${t.resetLead}</p>
+        ${error ? `<div class="alert">${error}</div>` : ""}
+        <input type="hidden" name="token" value="${token}" />
+        <label>${tr(req).newPassword}<input name="password" type="password" minlength="10" autocomplete="new-password" required /></label>
+        <label>${tr(req).confirmPassword}<input name="confirm_password" type="password" minlength="10" autocomplete="new-password" required /></label>
+        <button class="button primary" type="submit">${t.saveNewPassword}</button>
       </form>
     </main>
   `, req);
@@ -171,6 +218,69 @@ function registerInvestorRoutes(app) {
   app.get("/investor/logout", (req, res) => {
     res.setHeader("Set-Cookie", "tokenizas_investor=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
     res.redirect("/investor/login");
+  });
+
+  app.get("/investor/forgot", (req, res) => {
+    if (currentInvestor(req)) return res.redirect("/investor");
+    res.send(forgotForm(req));
+  });
+
+  app.post("/investor/forgot", async (req, res) => {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const genericMessage = tr(req).investor.recoverySent;
+    const user = store.get("SELECT * FROM users WHERE email = ? AND role = 'investor'", [email]);
+    if (user) {
+      const token = crypto.randomBytes(32).toString("base64url");
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      store.run("INSERT INTO password_resets (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)", [
+        user.id,
+        resetTokenHash(token),
+        expiresAt,
+        new Date().toISOString()
+      ]);
+      const resetUrl = `${req.protocol}://${req.get("host")}/investor/reset?token=${encodeURIComponent(token)}`;
+      try {
+        const result = await sendPasswordReset(user, resetUrl);
+        store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'requested_password_reset', ?, ?, ?)", [
+          user.email,
+          "investor",
+          result.sent ? result.messageId : result.reason,
+          new Date().toISOString()
+        ]);
+      } catch (error) {
+        store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'failed_password_reset_email', ?, ?, ?)", [
+          user.email,
+          "investor",
+          error.message,
+          new Date().toISOString()
+        ]);
+      }
+    }
+    res.send(forgotForm(req, genericMessage));
+  });
+
+  app.get("/investor/reset", (req, res) => {
+    if (!req.query.token) return res.redirect("/investor/forgot");
+    res.send(resetForm(req, String(req.query.token)));
+  });
+
+  app.post("/investor/reset", (req, res) => {
+    const token = String(req.body.token || "");
+    const password = String(req.body.password || "");
+    const confirm = String(req.body.confirm_password || "");
+    const reset = store.get("SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL", [resetTokenHash(token)]);
+    if (!reset || new Date(reset.expires_at).getTime() < Date.now()) return res.status(400).send(resetForm(req, token, tr(req).investor.invalidReset));
+    if (password.length < 10 || password !== confirm) return res.status(400).send(resetForm(req, token, tr(req).investor.passwordMismatch));
+    const user = store.get("SELECT * FROM users WHERE id = ? AND role = 'investor'", [reset.user_id]);
+    if (!user) return res.status(400).send(resetForm(req, token, tr(req).investor.invalidReset));
+    store.run("UPDATE users SET password_hash = ? WHERE id = ?", [hashPassword(password), user.id]);
+    store.run("UPDATE password_resets SET used_at = ? WHERE id = ?", [new Date().toISOString(), reset.id]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'reset_investor_password', 'investor', ?, ?)", [
+      user.email,
+      "password updated",
+      new Date().toISOString()
+    ]);
+    res.send(authForm(req, "login", tr(req).investor.passwordUpdated));
   });
 
   app.get("/investor", requireInvestor, (req, res) => res.send(renderPortal(req)));

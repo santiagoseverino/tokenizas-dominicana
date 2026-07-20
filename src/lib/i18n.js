@@ -148,7 +148,17 @@ Object.assign(dictionaries.es.investor, {
   kycChecklistLead: "Para aprobar el expediente se requiere identidad, prueba de vida, direccion, origen de fondos y perfil de inversionista.",
   received: "Recibido",
   pending: "Pendiente",
-  orderKycNote: "Indica cualquier detalle de KYC, origen de fondos o instrucciones de pago."
+  orderKycNote: "Indica cualquier detalle de KYC, origen de fondos o instrucciones de pago.",
+  forgotAccess: "Olvide mi clave o usuario",
+  forgotLead: "Escribe el email de tu cuenta de inversionista. Si existe una cuenta, enviaremos un enlace para cambiar la clave.",
+  sendRecovery: "Enviar recuperacion",
+  recoverySent: "Si el email pertenece a una cuenta de inversionista, recibiras un enlace para cambiar la clave.",
+  resetPassword: "Cambiar clave",
+  resetLead: "Crea una nueva clave para entrar a tu portal de inversionista.",
+  saveNewPassword: "Guardar nueva clave",
+  invalidReset: "El enlace no es valido o ya vencio. Solicita una nueva recuperacion.",
+  passwordMismatch: "La clave debe tener 10 caracteres o mas y coincidir con la confirmacion.",
+  passwordUpdated: "Clave actualizada. Entra con tu nueva clave."
 });
 Object.assign(dictionaries.en.investor, {
   phoneNumber: "Phone / WhatsApp",
@@ -159,7 +169,17 @@ Object.assign(dictionaries.en.investor, {
   kycChecklistLead: "Approval requires identity, liveness proof, address, source of funds, and investor profile.",
   received: "Received",
   pending: "Pending",
-  orderKycNote: "Add any KYC, source-of-funds, or payment instruction details."
+  orderKycNote: "Add any KYC, source-of-funds, or payment instruction details.",
+  forgotAccess: "Forgot password or user",
+  forgotLead: "Enter your investor account email. If an account exists, we will send a password reset link.",
+  sendRecovery: "Send recovery",
+  recoverySent: "If that email belongs to an investor account, you will receive a password reset link.",
+  resetPassword: "Reset password",
+  resetLead: "Create a new password to access your investor portal.",
+  saveNewPassword: "Save new password",
+  invalidReset: "The link is invalid or expired. Request a new recovery link.",
+  passwordMismatch: "The password must be 10 characters or more and match the confirmation.",
+  passwordUpdated: "Password updated. Sign in with your new password."
 });
 Object.assign(dictionaries.de.investor, {
   phoneNumber: "Telefon / WhatsApp",
@@ -170,7 +190,17 @@ Object.assign(dictionaries.de.investor, {
   kycChecklistLead: "Fuer die Freigabe sind Identitaet, Lebendigkeitsnachweis, Adresse, Mittelherkunft und Investorenprofil erforderlich.",
   received: "Erhalten",
   pending: "Ausstehend",
-  orderKycNote: "Fuege KYC-, Mittelherkunfts- oder Zahlungsdetails hinzu."
+  orderKycNote: "Fuege KYC-, Mittelherkunfts- oder Zahlungsdetails hinzu.",
+  forgotAccess: "Passwort oder Benutzer vergessen",
+  forgotLead: "Gib die E-Mail deines Investorenkontos ein. Falls ein Konto existiert, senden wir einen Link zum Aendern des Passworts.",
+  sendRecovery: "Wiederherstellung senden",
+  recoverySent: "Falls diese E-Mail zu einem Investorenkonto gehoert, erhaelst du einen Link zum Aendern des Passworts.",
+  resetPassword: "Passwort aendern",
+  resetLead: "Erstelle ein neues Passwort fuer dein Investorenportal.",
+  saveNewPassword: "Neues Passwort speichern",
+  invalidReset: "Der Link ist ungueltig oder abgelaufen. Fordere eine neue Wiederherstellung an.",
+  passwordMismatch: "Das Passwort muss mindestens 10 Zeichen haben und mit der Bestaetigung uebereinstimmen.",
+  passwordUpdated: "Passwort aktualisiert. Melde dich mit deinem neuen Passwort an."
 });
 Object.assign(dictionaries.fr.investor, {
   phoneNumber: "Telephone / WhatsApp",
@@ -181,7 +211,17 @@ Object.assign(dictionaries.fr.investor, {
   kycChecklistLead: "L'approbation exige identite, preuve de vie, adresse, origine des fonds et profil investisseur.",
   received: "Recu",
   pending: "En attente",
-  orderKycNote: "Ajoutez les details KYC, origine des fonds ou instructions de paiement."
+  orderKycNote: "Ajoutez les details KYC, origine des fonds ou instructions de paiement.",
+  forgotAccess: "Mot de passe ou utilisateur oublie",
+  forgotLead: "Entrez l'email de votre compte investisseur. Si un compte existe, nous enverrons un lien de reinitialisation.",
+  sendRecovery: "Envoyer la recuperation",
+  recoverySent: "Si cet email appartient a un compte investisseur, vous recevrez un lien pour changer le mot de passe.",
+  resetPassword: "Changer le mot de passe",
+  resetLead: "Creez un nouveau mot de passe pour acceder au portail investisseur.",
+  saveNewPassword: "Enregistrer le nouveau mot de passe",
+  invalidReset: "Le lien est invalide ou expire. Demandez une nouvelle recuperation.",
+  passwordMismatch: "Le mot de passe doit avoir au moins 10 caracteres et correspondre a la confirmation.",
+  passwordUpdated: "Mot de passe mis a jour. Connectez-vous avec le nouveau mot de passe."
 });
 
 Object.assign(dictionaries.es.projectPages, {

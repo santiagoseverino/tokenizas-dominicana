@@ -194,6 +194,15 @@ function migrate() {
       reviewed_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS issuer_applications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       owner_name TEXT NOT NULL,

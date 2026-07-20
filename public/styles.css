@@ -356,6 +356,48 @@ h3 { font-size: 21px; }
   max-width: 620px;
   box-shadow: 0 14px 34px rgba(8,47,73,.08);
 }
+.mintGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.mintItem {
+  display: grid;
+  gap: 18px;
+  align-content: space-between;
+  min-height: 230px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfd;
+}
+.mintItem h4 {
+  margin: 12px 0 8px;
+  font-size: 18px;
+}
+.mintItem p {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-weight: 750;
+}
+.monoBreak {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.mintActions {
+  display: flex;
+  align-items: center;
+}
+.mintActions .button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0;
+  pointer-events: auto;
+}
 .fact, .row {
   display: flex;
   justify-content: space-between;

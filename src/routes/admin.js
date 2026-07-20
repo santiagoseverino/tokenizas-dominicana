@@ -597,14 +597,22 @@ function registerAdminRoutes(app) {
           <p class="muted">Panel operativo para crear mints SPL en Solana devnet, preparar wallets, revisar whitelist KYC y emitir tokens de prueba.</p>
           <p><a class="button small" href="/admin">Volver</a></p>
         </div>
-        <section class="panel tablePanel">
+        <section class="panel adminPanel">
           <h3>Mints por proyecto</h3>
-          <table class="dataTable">
-            <thead><tr><th>Proyecto</th><th>Token</th><th>Supply</th><th>Mint</th><th>Multisig</th><th>Estado</th><th></th></tr></thead>
-            <tbody>
-              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td>${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<a class="button small primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}</td></tr>`).join("")}
-            </tbody>
-          </table>
+          <div class="mintGrid">
+            ${projects.map((project) => `<article class="mintItem">
+              <div>
+                <span class="statusBadge">${project.mint_status || "pending"}</span>
+                <h4>${project.title}</h4>
+                <p>${project.token_symbol} · Supply ${project.token_supply}</p>
+                <span class="monoBreak">Mint: ${project.mint_address || "No configurado"}</span>
+                <span class="monoBreak">Authority: ${project.multisig_wallet || "Pendiente"}</span>
+              </div>
+              <div class="mintActions">
+                ${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<a class="button primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}
+              </div>
+            </article>`).join("")}
+          </div>
         </section>
         <section class="split">
           <div class="panel">

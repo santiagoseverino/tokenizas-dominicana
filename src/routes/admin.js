@@ -619,7 +619,7 @@ function registerAdminRoutes(app) {
       FROM investments i
       JOIN users u ON u.id = i.user_id
       JOIN projects p ON p.id = i.project_id
-      WHERE i.status IN ('pending_payment', 'payment_failed', 'payment_received', 'compliance_review')
+      WHERE i.status NOT IN ('tokens_issued', 'canceled')
       ORDER BY i.id DESC
     `);
     const balances = store.all(`
@@ -662,8 +662,8 @@ function registerAdminRoutes(app) {
         </section>
         <section class="split">
           <div class="panel">
-            <h3>Ordenes pendientes</h3>
-            ${pendingInvestments.map((item) => `<div class="event"><b>${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${item.kyc_status} - ${statusLabel(item.status)}</span><p>Pago esperado: ${number.format(item.payment_expected_sol || 0)} SOL${item.payment_signature ? ` - Firma: ${item.payment_signature}` : ""}</p>${item.status === "payment_received" ? `<form method="post" action="/admin/tokenization/investments/${item.id}/issue"><button class="button small" type="submit">Emitir tokens</button></form>` : `<span class="statusBadge">Esperando pago on-chain</span>`}</div>`).join("") || "<p class=\"muted\">No hay ordenes pendientes.</p>"}
+            <h3>Ordenes por procesar</h3>
+            ${pendingInvestments.map((item) => `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - KYC: ${item.kyc_status} - Orden: ${statusLabel(item.status)} - Pago: ${item.payment_status || "pendiente"}</span><p>Pago esperado: ${number.format(item.payment_expected_sol || 0)} SOL${item.payment_signature ? ` - Firma: ${item.payment_signature}` : ""}</p>${item.status === "payment_received" ? `<form method="post" action="/admin/tokenization/investments/${item.id}/issue"><button class="button small" type="submit">Emitir tokens</button></form>` : `<span class="statusBadge">Esperando pago on-chain</span>`}</div>`).join("") || "<p class=\"muted\">No hay ordenes por procesar.</p>"}
           </div>
           <div class="panel">
             <h3>Balances tokenizados</h3>

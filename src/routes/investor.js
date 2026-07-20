@@ -84,7 +84,7 @@ function renderPortal(req, message = "") {
         <div>
           <p class="eyebrow">${t.portal}</p>
           <h1>${user.name}</h1>
-          <p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - ${tr(req).wallet}: ${user.wallet || "pendiente"}</p>
+          <p class="muted">KYC: ${statusLabel(user.kyc_status, req)} - ${tr(req).wallet}: ${user.wallet || tr(req).dashboardText.pending}</p>
         </div>
         <div class="adminActions">
           <a class="button primary small" href="/invest">${t.createOrder}</a>

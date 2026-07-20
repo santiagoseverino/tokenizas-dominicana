@@ -24,7 +24,7 @@ function registerInvestRoutes(app) {
             <h2>${t.createOrder}</h2>
             <label>${t.projects}<select name="project_id">${projects.map((project) => `<option value="${project.id}" ${defaultProject && defaultProject.id === project.id ? "selected" : ""}>${project.title} - ${project.token_symbol}</option>`).join("")}</select></label>
             <label>${t.targetCapital}<input name="amount" type="number" min="100" step="100" value="${defaultProject ? defaultProject.min_investment : 1000}" /></label>
-            <label>${t.status}<select name="payment_method"><option>USDC Solana</option><option>Bank transfer</option></select></label>
+            <label>${t.status}<select name="payment_method"><option>${t.paymentMethods.usdc}</option><option>${t.paymentMethods.bank}</option></select></label>
             <label>KYC<textarea name="investor_note" rows="4" placeholder="${t.investor.missingDocs}"></textarea></label>
             <button class="button primary" type="submit">${t.createOrder}</button>
           </form>
@@ -45,13 +45,13 @@ function registerInvestRoutes(app) {
     if (!user) return res.redirect("/investor/login");
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.body.project_id]);
     const amount = Number(req.body.amount || 0);
-    if (!project || amount < project.min_investment) return res.status(400).send("Orden invalida");
+    if (!project || amount < project.min_investment) return res.status(400).send(tr(req).invalidOrder || "Invalid order");
     const tokens = Math.floor(amount / project.token_price);
     const status = user.kyc_status === "approved" ? "pending_payment" : "compliance_review";
     store.run("INSERT INTO investments (user_id, project_id, amount, tokens, payment_method, status, investor_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [user.id, project.id, amount, tokens, req.body.payment_method, status, req.body.investor_note || "", new Date().toISOString()]);
     const investment = store.get("SELECT id FROM investments WHERE user_id = ? AND project_id = ? ORDER BY id DESC LIMIT 1", [user.id, project.id]);
     store.run("UPDATE offerings SET raised = raised + ? WHERE project_id = ?", [amount, project.id]);
-    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "created_order", project.title, `${tokens} tokens reservados por ${money.format(amount)}.`, new Date().toISOString()]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", [user.name, "created_order", project.title, `${tokens} ${tr(req).auditCreatedOrder || "tokens reserved for"} ${money.format(amount)}.`, new Date().toISOString()]);
     res.redirect(`/dashboard?created=${investment.id}`);
   });
 }

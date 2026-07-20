@@ -92,7 +92,7 @@ function registerProjectRoutes(app) {
             <form class="investForm" method="post" action="/invest">
               <input type="hidden" name="project_id" value="${project.id}" />
               <label>${t.investAmount}<input name="amount" type="number" min="${project.min_investment}" step="100" value="${project.min_investment}" /></label>
-              <label>${t.paymentMethod}<select name="payment_method"><option>USDC Solana</option><option>Bank transfer</option></select></label>
+              <label>${t.paymentMethod}<select name="payment_method"><option>${tr(req).paymentMethods.usdc}</option><option>${tr(req).paymentMethods.bank}</option></select></label>
               <button class="button primary" type="submit">${t.testOrder}</button>
             </form>
           </div>

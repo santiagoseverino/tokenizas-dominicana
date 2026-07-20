@@ -14,9 +14,9 @@ function registerLegalRoutes(app) {
           </div>
         </section>
         <section class="legalGrid">
-          <article class="panel lawCard"><strong>01</strong><h3>Token != titulo</h3><p>${t.legal1}</p></article>
-          <article class="panel lawCard"><strong>02</strong><h3>Valores / securities</h3><p>${t.legal2}</p></article>
-          <article class="panel lawCard"><strong>03</strong><h3>Registro separado</h3><p>${t.legal3}</p></article>
+          <article class="panel lawCard"><strong>01</strong><h3>${t.legalCardTitles[0]}</h3><p>${t.legal1}</p></article>
+          <article class="panel lawCard"><strong>02</strong><h3>${t.legalCardTitles[1]}</h3><p>${t.legal2}</p></article>
+          <article class="panel lawCard"><strong>03</strong><h3>${t.legalCardTitles[2]}</h3><p>${t.legal3}</p></article>
         </section>
         <section class="section">
           <div class="sectionHead">

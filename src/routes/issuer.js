@@ -154,7 +154,7 @@ function registerIssuerRoutes(app) {
         <div class="panel adminPanel">
           <p class="eyebrow">${t.successEyebrow}</p>
           <h1>${t.successTitle}</h1>
-          <p class="muted">${t.requestNumber}: ${req.query.id || "pendiente"}. ${t.successLead}</p>
+          <p class="muted">${t.requestNumber}: ${req.query.id || tr(req).dashboardText.pending}. ${t.successLead}</p>
           <p><a class="button primary" href="/projects">${tr(req).viewProjects}</a> <a class="button small" href="/contact">${t.contactTeam}</a></p>
         </div>
       </main>

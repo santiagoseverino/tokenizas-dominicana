@@ -53,7 +53,7 @@ function registerHomeRoutes(app) {
         </section>
         <section class="section featureBand">
           <div class="sectionHead">
-            <p class="eyebrow">Tokenization platform</p>
+            <p class="eyebrow">${t.platformText.eyebrow}</p>
             <h2>${t.modulesTitle}</h2>
             <p class="muted">${t.modulesLead}</p>
           </div>
@@ -67,12 +67,10 @@ function registerHomeRoutes(app) {
         <section class="section valueSection">
           <div>
             <p class="eyebrow">${t.advantagesTitle}</p>
-            <h2>Built for issuers, developers, family offices and cross-border investors.</h2>
+            <h2>${t.platformText.audience}</h2>
           </div>
           <div class="valueList">
-            <p>Due diligence workflow, project documentation, investor eligibility and cap table visibility.</p>
-            <p>Primary offerings, controlled transfers, operational reporting and distribution tracking.</p>
-            <p>White-label style pages for each project with professional visuals and compliance-first language.</p>
+            ${t.platformText.values.map((item) => `<p>${item}</p>`).join("")}
           </div>
         </section>
         <section class="section ctaBand">

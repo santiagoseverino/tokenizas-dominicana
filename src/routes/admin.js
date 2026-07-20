@@ -56,6 +56,17 @@ function solanaExplorerAddress(address) {
   return `https://explorer.solana.com/address/${address}${cluster}`;
 }
 
+function errorMessage(error) {
+  if (!error) return "Error desconocido. Revisa journalctl para mas detalles.";
+  if (error.message) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch (_) {
+    return String(error);
+  }
+}
+
 function projectForm(project = {}, offering = {}, error = "") {
   const isEdit = Boolean(project.id);
   return `
@@ -658,7 +669,7 @@ function registerAdminRoutes(app) {
       await ensureProjectMint(project);
       res.redirect("/admin/tokenization");
     } catch (error) {
-      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
+      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
     }
   }
 
@@ -670,7 +681,7 @@ function registerAdminRoutes(app) {
       await issueTokensForInvestment(req.params.id);
       res.redirect("/admin/tokenization");
     } catch (error) {
-      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
+      res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
     }
   });
 

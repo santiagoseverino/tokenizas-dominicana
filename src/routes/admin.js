@@ -594,7 +594,7 @@ function registerAdminRoutes(app) {
         <div class="sectionHead">
           <p class="eyebrow">Solana</p>
           <h1>Tokenizacion de proyectos</h1>
-          <p class="muted">Simulador operativo para configurar mints, wallets, whitelist y emision. No firma transacciones reales todavia.</p>
+          <p class="muted">Panel operativo para crear mints SPL en Solana devnet, preparar wallets, revisar whitelist KYC y emitir tokens de prueba.</p>
           <p><a class="button small" href="/admin">Volver</a></p>
         </div>
         <section class="panel tablePanel">
@@ -602,7 +602,7 @@ function registerAdminRoutes(app) {
           <table class="dataTable">
             <thead><tr><th>Proyecto</th><th>Token</th><th>Supply</th><th>Mint</th><th>Multisig</th><th>Estado</th><th></th></tr></thead>
             <tbody>
-              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td><form method="post" action="/admin/tokenization/projects/${project.id}/mint"><button class="button small" type="submit">Configurar</button></form></td></tr>`).join("")}
+              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td>${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<form method="post" action="/admin/tokenization/projects/${project.id}/mint"><button class="button small primary" type="submit">Crear mint en devnet</button></form>`}</td></tr>`).join("")}
             </tbody>
           </table>
         </section>

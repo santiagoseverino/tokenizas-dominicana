@@ -602,7 +602,7 @@ function registerAdminRoutes(app) {
           <table class="dataTable">
             <thead><tr><th>Proyecto</th><th>Token</th><th>Supply</th><th>Mint</th><th>Multisig</th><th>Estado</th><th></th></tr></thead>
             <tbody>
-              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td>${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<form method="post" action="/admin/tokenization/projects/${project.id}/mint"><button class="button small primary" type="submit">Crear mint en devnet</button></form>`}</td></tr>`).join("")}
+              ${projects.map((project) => `<tr><td>${project.title}</td><td>${project.token_symbol}</td><td>${project.token_supply}</td><td>${project.mint_address || "No configurado"}</td><td>${project.multisig_wallet || ""}</td><td><span class="statusBadge">${project.mint_status || "pending"}</span></td><td>${project.mint_address ? `<span class="statusBadge">Mint creado</span>` : `<a class="button small primary" href="/admin/tokenization/projects/${project.id}/mint">Crear mint en devnet</a>`}</td></tr>`).join("")}
             </tbody>
           </table>
         </section>
@@ -624,7 +624,7 @@ function registerAdminRoutes(app) {
     `, req));
   });
 
-  app.post("/admin/tokenization/projects/:id/mint", requireAdmin, async (req, res) => {
+  async function createProjectMint(req, res) {
     const project = store.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
     if (!project) return res.status(404).send("Proyecto no encontrado");
     try {
@@ -633,7 +633,10 @@ function registerAdminRoutes(app) {
     } catch (error) {
       res.status(400).send(layout("Tokenizacion", `<main class="page"><div class="panel"><div class="alert">${error.message}</div><p><a class="button small" href="/admin/tokenization">Volver</a></p></div></main>`, req));
     }
-  });
+  }
+
+  app.get("/admin/tokenization/projects/:id/mint", requireAdmin, createProjectMint);
+  app.post("/admin/tokenization/projects/:id/mint", requireAdmin, createProjectMint);
 
   app.post("/admin/tokenization/investments/:id/issue", requireAdmin, async (req, res) => {
     try {

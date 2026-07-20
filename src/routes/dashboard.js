@@ -5,6 +5,20 @@ const { getSolPaymentExpected, getTreasuryAddress, verifySolPayment } = require(
 const { tr } = require("../lib/i18n");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 
+function solanaExplorerTx(signature) {
+  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+}
+
+function looksLikeSolanaSignature(signature) {
+  return /^[1-9A-HJ-NP-Za-km-z]{64,100}$/.test(String(signature || ""));
+}
+
+function explorerButton(signature, label) {
+  return looksLikeSolanaSignature(signature)
+    ? `<a class="button small" href="${solanaExplorerTx(signature)}" target="_blank" rel="noopener">${label}</a>`
+    : "";
+}
+
 function renderPaymentBox(item, req) {
   if (item.status !== "pending_payment" && item.status !== "payment_failed") return "";
   const expectedSol = item.payment_expected_sol || getSolPaymentExpected(item.tokens);
@@ -19,6 +33,25 @@ function renderPaymentBox(item, req) {
       <button class="button small primary" type="submit">Verificar pago on-chain</button>
     </form>
   </div>`;
+}
+
+function renderReceipt(item, events, req) {
+  if (item.status === "canceled") return "";
+  const d = tr(req).dashboardText;
+  const issueEvent = events.find((event) => Number(event.project_id) === Number(item.project_id) && event.event_type === "tokens_issued" && String(event.note || "").includes(String(item.token_symbol)));
+  const paymentDone = item.payment_status === "received" || item.payment_received_at;
+  return `<article class="receiptItem">
+    <div>
+      <span class="statusBadge">Orden #${item.id}</span>
+      <h4>${item.title}</h4>
+      <p>${number.format(item.tokens)} ${item.token_symbol} - ${money.format(item.amount)} - ${statusLabel(item.status, req)}</p>
+    </div>
+    <div class="receiptSteps">
+      <div class="receiptStep done"><b>${d.receiptOrderCreated}</b><span>${item.created_at}</span></div>
+      <div class="receiptStep ${paymentDone ? "done" : ""}"><b>${d.receiptPayment}</b><span>${paymentDone ? `${number.format(item.payment_expected_sol || 0)} SOL` : d.pending}</span>${explorerButton(item.payment_signature, d.viewPaymentTx)}</div>
+      <div class="receiptStep ${item.status === "tokens_issued" ? "done" : ""}"><b>${d.receiptIssued}</b><span>${issueEvent ? issueEvent.created_at : d.pending}</span>${issueEvent ? explorerButton(issueEvent.signature, d.viewIssueTx) : ""}</div>
+    </div>
+  </article>`;
 }
 
 function registerDashboardRoutes(app) {
@@ -39,6 +72,13 @@ function registerDashboardRoutes(app) {
       WHERE tb.user_id = ?
       ORDER BY tb.updated_at DESC
     `, [user.id]).map((balance) => ({ ...balance, slug: balance.slug, title: balance.project_title })), req).map((balance) => ({ ...balance, project_title: balance.title }));
+    const events = store.all(`
+      SELECT te.*
+      FROM token_events te
+      JOIN investments i ON i.project_id = te.project_id
+      WHERE i.user_id = ?
+      ORDER BY te.id DESC
+    `, [user.id]);
     const balanceProjectIds = new Set(balances.map((balance) => Number(balance.project_id)));
     const reservedTokens = investments.filter((item) => item.status !== "canceled" && (item.status !== "tokens_issued" || !balanceProjectIds.has(Number(item.project_id))));
     const activeInvestments = investments.filter((item) => item.status !== "canceled");
@@ -69,6 +109,10 @@ function registerDashboardRoutes(app) {
             ${reservedTokens.map((item) => `<div class="event ${createdId === item.id ? "highlightBox" : ""}"><b>${number.format(item.tokens)} ${item.token_symbol}</b><span>${item.title}</span><p>${statusLabel(item.status, req)} - ${d.reservedPending}</p><span>${d.amount}: ${money.format(item.amount)}</span><span>${t.wallet}: ${d.pending}</span></div>`).join("")}
             ${!balances.length && !reservedTokens.length ? `<p class="muted">${d.empty}</p>` : ""}
           </div>
+        </section>
+        <section class="panel">
+          <h3>${d.operationReceipt}</h3>
+          <div class="receiptList">${investments.map((item) => renderReceipt(item, events, req)).join("") || `<p class="muted">${d.empty}</p>`}</div>
         </section>
       </main>
     `, req));

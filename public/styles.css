@@ -653,6 +653,43 @@ textarea {
 .paymentBox input {
   width: 100%;
 }
+.receiptList {
+  display: grid;
+  gap: 14px;
+}
+.receiptItem {
+  display: grid;
+  grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.receiptItem h4 {
+  margin: 8px 0 4px;
+}
+.receiptSteps {
+  display: grid;
+  gap: 10px;
+}
+.receiptStep {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+.receiptStep.done {
+  border-color: rgba(0, 180, 150, .35);
+  background: #f0fffb;
+}
+.receiptStep b,
+.receiptStep span {
+  display: block;
+}
+.receiptStep span {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
 .verificationGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -735,6 +772,7 @@ textarea {
   .miniProject img { width: 100%; height: 190px; }
   .imagePreview img { width: 100%; height: 190px; }
   .holding { grid-template-columns: 72px 1fr; }
+  .receiptItem { grid-template-columns: 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
   .adminHero { flex-direction: column; padding: 22px; }
   .adminHero h1 { font-size: 34px; }

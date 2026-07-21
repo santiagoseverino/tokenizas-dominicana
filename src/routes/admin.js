@@ -306,6 +306,25 @@ function issuerWhatsappUrl(application, message) {
   return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : "";
 }
 
+function renderAdminProjectReadiness(project) {
+  const checklist = getProjectChecklist(project.id);
+  const progress = checklistProgress(checklist);
+  const blocked = checklist.some((item) => item.status === "blocked");
+  const label = blocked ? "Bloqueado" : progress.percent === 100 ? "Listo" : "En progreso";
+  const className = blocked ? "blocked" : progress.percent === 100 ? "done" : "review";
+  return `<div class="projectReadinessRow">
+    <div>
+      <span><a href="/admin/projects/${project.id}">${project.title}</a></span>
+      <small>${statusLabel(project.status)} - ${money.format(project.raised || 0)} reservado</small>
+    </div>
+    <div class="readinessMini">
+      <b class="${className}">${label}</b>
+      <em>${progress.percent}%</em>
+      <div class="progress miniProgress"><span style="width:${progress.percent}%"></span></div>
+    </div>
+  </div>`;
+}
+
 function registerAdminRoutes(app) {
   app.get("/admin", requireAdmin, (req, res) => {
     const t = tr(req);
@@ -332,7 +351,7 @@ function registerAdminRoutes(app) {
           </div>
         </div>
         <section class="split">
-          <div class="panel adminPanel"><h3>Proyectos</h3>${projects.map((project) => `<div class="row"><span><a href="/admin/projects/${project.id}">${project.title}</a></span><b>${money.format(project.raised || 0)}</b></div>`).join("")}</div>
+          <div class="panel adminPanel"><h3>Proyectos</h3><div class="projectReadinessList">${projects.map(renderAdminProjectReadiness).join("")}</div></div>
           <div class="panel adminPanel"><h3>KYC / KYB</h3>${users.map((user) => `<div class="row"><span>${user.name}</span><b>${statusLabel(user.kyc_status)}</b></div>`).join("")}</div>
         </section>
         <section class="split">

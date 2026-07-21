@@ -453,6 +453,51 @@ h3 { font-size: 21px; }
   border-bottom: 1px solid var(--line);
 }
 .fact span, .row span { color: var(--muted); }
+.projectReadinessList {
+  display: grid;
+  gap: 10px;
+}
+.projectReadinessRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 16px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.projectReadinessRow span,
+.projectReadinessRow small {
+  display: block;
+}
+.projectReadinessRow small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.readinessMini {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+.readinessMini b {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.readinessMini b.done { color: var(--brand-dark); }
+.readinessMini b.review { color: #996400; }
+.readinessMini b.blocked { color: #cc2244; }
+.readinessMini em {
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 900;
+}
+.miniProgress {
+  grid-column: 1 / -1;
+  height: 8px;
+  margin: 0;
+}
 .progress { height: 12px; border-radius: 999px; background: #dfe8e4; overflow: hidden; margin: 24px 0 10px; }
 .progress span { display: block; height: 100%; background: var(--brand); }
 .investForm {
@@ -882,6 +927,7 @@ textarea {
   .holding { grid-template-columns: 64px 1fr; }
   .checklistHeader { flex-direction: column; }
   .checklistRow { grid-template-columns: 1fr; }
+  .projectReadinessRow { grid-template-columns: 1fr; }
   .receiptItem { grid-template-columns: 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
   .adminHero { flex-direction: column; padding: 22px; }

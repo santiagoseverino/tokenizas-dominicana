@@ -74,11 +74,21 @@ nav a:hover { color: var(--brand-dark); }
   border-radius: 999px;
 }
 .langSwitch a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 9px;
   border-radius: 999px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 850;
+}
+.langSwitch img {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.12);
 }
 .langSwitch a.active {
   background: var(--blue);

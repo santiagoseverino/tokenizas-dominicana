@@ -4,7 +4,8 @@ const { whatsappNumber } = require("../config");
 
 function langSwitcher(req) {
   const current = getLang(req);
-  return `<div class="langSwitch">${["es", "en", "de", "fr"].map((lang) => `<a class="${current === lang ? "active" : ""}" href="?lang=${lang}">${lang.toUpperCase()}</a>`).join("")}</div>`;
+  const flags = { es: "/flags/es.svg", en: "/flags/en.svg", de: "/flags/de.svg", fr: "/flags/fr.svg" };
+  return `<div class="langSwitch">${["es", "en", "de", "fr"].map((lang) => `<a class="${current === lang ? "active" : ""}" href="?lang=${lang}"><img src="${flags[lang]}" alt="${lang.toUpperCase()}" loading="lazy" decoding="async" />${lang.toUpperCase()}</a>`).join("")}</div>`;
 }
 
 function layout(title, body, req) {

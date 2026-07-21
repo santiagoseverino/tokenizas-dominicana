@@ -973,6 +973,32 @@ textarea {
   color: #ffe082;
   background: rgba(255,255,255,.08);
 }
+.cacaoLang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 999px;
+  background: rgba(255,255,255,.1);
+}
+.cacaoLang a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: rgba(255,255,255,.82);
+  font-size: 12px;
+  font-weight: 950;
+}
+.cacaoLang a.active {
+  color: #173b24;
+  background: #ffe082;
+}
+.cacaoLang span {
+  font-size: 14px;
+}
 .cacaoHeroContent {
   position: relative;
   z-index: 2;
@@ -1256,6 +1282,7 @@ textarea {
   .cacaoNav { align-items: flex-start; flex-direction: column; }
   .cacaoNav nav { width: 100%; justify-content: flex-start; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
   .cacaoNav nav a { white-space: nowrap; }
+  .cacaoLang { max-width: 100%; overflow-x: auto; }
   .cacaoHeroContent { padding: 86px 22px 70px; text-align: left; }
   .cacaoHeroContent h1 { font-size: 46px; }
   .cacaoHeroContent .actions { justify-content: flex-start; }

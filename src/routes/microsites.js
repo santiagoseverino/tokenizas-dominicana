@@ -247,6 +247,113 @@ const cacaoText = {
   }
 };
 
+const musicText = {
+  es: {
+    eyebrow: "Musica tokenizada / Catalogo y eventos",
+    title: "Lionel The Star Entertainment",
+    lead: "Una oferta musical de prueba para financiar comercializacion, videos, eventos, presencia digital, turismo musical, streaming, patrocinios, merchandising y licencias.",
+    invest: "Invertir en Lionel",
+    deck: "Ver oferta",
+    stats: ["Canciones originales", "Meta inicial", "Canales de ingreso", "Token"],
+    revenueTitle: "Fuentes de ingreso",
+    revenueLead: "El proyecto busca diversificar ingresos alrededor del artista, el catalogo y la marca.",
+    revenue: [
+      ["Streaming y YouTube", "Monetizacion digital del catalogo, videos y contenido promocional."],
+      ["Eventos y turismo", "Presentaciones, experiencias, activaciones y oportunidades con hoteles o venues."],
+      ["Licencias y patrocinios", "Uso comercial de canciones, imagen artistica, marcas y colaboraciones."],
+      ["Merchandising", "Productos fisicos y digitales vinculados al artista y su comunidad."]
+    ],
+    fundsTitle: "Uso de fondos",
+    fundsLead: "La meta demo de USD 10,000 valida el flujo de inversion y ayuda a estructurar una primera campana comercial.",
+    funds: ["Produccion y videos", "Marketing digital", "Eventos y promocion", "Legal, reportes y administracion"],
+    roadmapTitle: "Plan artistico",
+    roadmap: [
+      ["Lanzamiento", "Preparar narrativa, activos visuales y canales oficiales."],
+      ["Distribucion", "Impulsar streaming, YouTube, redes y campanas segmentadas."],
+      ["Eventos", "Activar presentaciones, alianzas y experiencias turisticas."],
+      ["Reportes", "Medir reproducciones, ventas, sponsors y resultados del piloto."]
+    ]
+  },
+  en: {
+    eyebrow: "Tokenized music / Catalog and events",
+    title: "Lionel The Star Entertainment",
+    lead: "A demo music offering to fund commercialization, videos, events, digital presence, music tourism, streaming, sponsorships, merchandising, and licensing.",
+    invest: "Invest in Lionel",
+    deck: "View offer",
+    stats: ["Original songs", "Initial target", "Revenue channels", "Token"],
+    revenueTitle: "Revenue streams",
+    revenueLead: "The project is designed to diversify revenue around the artist, catalog, and brand.",
+    revenue: [
+      ["Streaming and YouTube", "Digital monetization of the catalog, videos, and promotional content."],
+      ["Events and tourism", "Performances, experiences, activations, and opportunities with hotels or venues."],
+      ["Licensing and sponsorships", "Commercial use of songs, artist image, brands, and collaborations."],
+      ["Merchandising", "Physical and digital products linked to the artist and community."]
+    ],
+    fundsTitle: "Use of funds",
+    fundsLead: "The USD 10,000 demo target validates the investment flow and supports a first commercial campaign.",
+    funds: ["Production and videos", "Digital marketing", "Events and promotion", "Legal, reporting, and administration"],
+    roadmapTitle: "Artist roadmap",
+    roadmap: [
+      ["Launch", "Prepare narrative, visual assets, and official channels."],
+      ["Distribution", "Grow streaming, YouTube, social channels, and targeted campaigns."],
+      ["Events", "Activate performances, partnerships, and tourism experiences."],
+      ["Reports", "Measure streams, sales, sponsors, and pilot results."]
+    ]
+  },
+  de: {
+    eyebrow: "Tokenisierte Musik / Katalog und Events",
+    title: "Lionel The Star Entertainment",
+    lead: "Ein Demo-Musikangebot zur Finanzierung von Vermarktung, Videos, Events, digitaler Praesenz, Musiktourismus, Streaming, Sponsoring, Merchandising und Lizenzen.",
+    invest: "In Lionel investieren",
+    deck: "Angebot ansehen",
+    stats: ["Originalsongs", "Anfangsziel", "Einnahmekanaele", "Token"],
+    revenueTitle: "Einnahmequellen",
+    revenueLead: "Das Projekt diversifiziert Einnahmen rund um Kuenstler, Katalog und Marke.",
+    revenue: [
+      ["Streaming und YouTube", "Digitale Monetarisierung von Katalog, Videos und Promotion-Inhalten."],
+      ["Events und Tourismus", "Auftritte, Erlebnisse, Aktivierungen und Chancen mit Hotels oder Veranstaltungsorten."],
+      ["Lizenzen und Sponsoring", "Kommerzielle Nutzung von Songs, Kuenstlerimage, Marken und Kooperationen."],
+      ["Merchandising", "Physische und digitale Produkte fuer Kuenstler und Community."]
+    ],
+    fundsTitle: "Mittelverwendung",
+    fundsLead: "Das Demo-Ziel von USD 10.000 validiert den Investitionsfluss und unterstuetzt eine erste Kampagne.",
+    funds: ["Produktion und Videos", "Digitales Marketing", "Events und Promotion", "Recht, Reporting und Verwaltung"],
+    roadmapTitle: "Kuenstlerplan",
+    roadmap: [
+      ["Launch", "Narrativ, visuelle Assets und offizielle Kanaele vorbereiten."],
+      ["Distribution", "Streaming, YouTube, Social Media und Kampagnen ausbauen."],
+      ["Events", "Auftritte, Partnerschaften und Tourismuserlebnisse aktivieren."],
+      ["Berichte", "Streams, Verkaeufe, Sponsoren und Pilotresultate messen."]
+    ]
+  },
+  fr: {
+    eyebrow: "Musique tokenisee / Catalogue et evenements",
+    title: "Lionel The Star Entertainment",
+    lead: "Offre musicale demo pour financer commercialisation, videos, evenements, presence digitale, tourisme musical, streaming, sponsoring, merchandising et licences.",
+    invest: "Investir dans Lionel",
+    deck: "Voir l'offre",
+    stats: ["Chansons originales", "Objectif initial", "Canaux de revenus", "Token"],
+    revenueTitle: "Sources de revenus",
+    revenueLead: "Le projet vise a diversifier les revenus autour de l'artiste, du catalogue et de la marque.",
+    revenue: [
+      ["Streaming et YouTube", "Monetisation digitale du catalogue, des videos et contenus promotionnels."],
+      ["Evenements et tourisme", "Concerts, experiences, activations et opportunites avec hotels ou lieux."],
+      ["Licences et sponsoring", "Usage commercial des chansons, de l'image artistique, des marques et collaborations."],
+      ["Merchandising", "Produits physiques et digitaux lies a l'artiste et a sa communaute."]
+    ],
+    fundsTitle: "Utilisation des fonds",
+    fundsLead: "L'objectif demo de USD 10 000 valide le flux d'investissement et soutient une premiere campagne commerciale.",
+    funds: ["Production et videos", "Marketing digital", "Evenements et promotion", "Juridique, reporting et administration"],
+    roadmapTitle: "Plan artistique",
+    roadmap: [
+      ["Lancement", "Preparer narration, assets visuels et canaux officiels."],
+      ["Distribution", "Developper streaming, YouTube, reseaux et campagnes ciblees."],
+      ["Evenements", "Activer concerts, partenariats et experiences touristiques."],
+      ["Rapports", "Mesurer streams, ventes, sponsors et resultats du pilote."]
+    ]
+  }
+};
+
 function normalizeHost(host) {
   return String(host || "").split(":")[0].toLowerCase();
 }
@@ -291,6 +398,10 @@ function findProjectBySubdomain(subdomain) {
 
 function cacaoT(req) {
   return cacaoText[getLang(req)] || cacaoText.es;
+}
+
+function musicT(req) {
+  return musicText[getLang(req)] || musicText.es;
 }
 
 function checklistLabel(item, req) {
@@ -412,6 +523,73 @@ function genericMicrositeHero(project, tokenizasUrl, req) {
   </section>`;
 }
 
+function musicHero(req, project, tokenizasUrl) {
+  const t = musicT(req);
+  return `<section class="musicHero" id="inicio">
+    <div class="musicHeroImage"><img src="/lionel-the-star.jpg" alt="${project.title}" loading="eager" decoding="async" /></div>
+    <header class="musicNav">
+      <a class="musicLogo" href="#inicio"><span>LT</span><strong>Lionel</strong></a>
+      <nav>
+        <a href="#revenue">${t.revenueTitle}</a>
+        <a href="#fondos">${t.fundsTitle}</a>
+        <a href="#roadmap">${t.roadmapTitle}</a>
+        <a href="#readiness">Readiness</a>
+      </nav>
+      ${cacaoLanguageSwitch(req)}
+    </header>
+    <div class="musicHeroContent">
+      <p class="eyebrow">${t.eyebrow}</p>
+      <h1>${t.title}</h1>
+      <p class="lead">${t.lead}</p>
+      <div class="actions">
+        <a class="button primary" href="${tokenizasUrl}/projects/${project.slug}?lang=${getLang(req)}#invertir">${t.invest}</a>
+        <a class="button" href="#revenue">${t.deck}</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function musicMicrositeSections(req, project, offering, raisedPct, tokenizasUrl) {
+  const t = musicT(req);
+  const hardCap = offering.hard_cap || project.target_raise;
+  const statValues = ["14", money.format(project.target_raise), "4", project.token_symbol];
+  return `
+    <section class="musicStats">
+      ${t.stats.map((label, index) => `<article><span>${label}</span><strong>${statValues[index]}</strong></article>`).join("")}
+    </section>
+    <section class="musicRevenue" id="revenue">
+      <div>
+        <p class="eyebrow">Music token</p>
+        <h2>${t.revenueTitle}</h2>
+        <p>${t.revenueLead}</p>
+      </div>
+      <div class="musicRevenueGrid">
+        ${t.revenue.map(([title, text]) => `<article><h3>${title}</h3><p>${text}</p></article>`).join("")}
+      </div>
+    </section>
+    <section class="microSection musicUseFunds" id="fondos">
+      <div>
+        <p class="eyebrow">${t.fundsTitle}</p>
+        <h2>${money.format(project.target_raise)}</h2>
+        <p>${t.fundsLead}</p>
+        <div class="fundRows">${t.funds.map((label, index) => `<div><span>${label}</span><strong>${[35, 30, 25, 10][index]}%</strong></div>`).join("")}</div>
+      </div>
+      <aside class="panel">
+        <h3>${cacaoT(req).roundProgress}</h3>
+        <div class="progress"><span style="width:${raisedPct}%"></span></div>
+        <div class="fact"><span>${cacaoT(req).reserved}</span><strong>${money.format(offering.raised || 0)}</strong></div>
+        <div class="fact"><span>${cacaoT(req).target}</span><strong>${money.format(hardCap)}</strong></div>
+        <a class="button primary" href="${tokenizasUrl}/projects/${project.slug}?lang=${getLang(req)}#invertir">${t.invest}</a>
+      </aside>
+    </section>
+    <section class="musicRoadmap" id="roadmap">
+      <p class="eyebrow">Roadmap</p>
+      <h2>${t.roadmapTitle}</h2>
+      <div>${t.roadmap.map(([title, text], index) => `<article><span>0${index + 1}</span><h3>${title}</h3><p>${text}</p></article>`).join("")}</div>
+    </section>
+  `;
+}
+
 function micrositeHtml(req, project) {
   const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]) || {};
   const docs = store.all("SELECT * FROM documents WHERE project_id = ?", [project.id]);
@@ -431,14 +609,15 @@ function micrositeHtml(req, project) {
     </head>
     <body>
       <main class="microSite">
-        ${project.slug === "finca-cacao-bayaguana" ? cacaoHero(req, project, tokenizasUrl) : genericMicrositeHero(project, tokenizasUrl, req)}
-        <section class="microStats">
+        ${project.slug === "finca-cacao-bayaguana" ? cacaoHero(req, project, tokenizasUrl) : project.category === "music" ? musicHero(req, project, tokenizasUrl) : genericMicrositeHero(project, tokenizasUrl, req)}
+        ${project.category === "music" ? "" : `<section class="microStats">
           <article><span>${t.target}</span><strong>${money.format(project.target_raise)}</strong></article>
           <article><span>Token</span><strong>${project.token_symbol}</strong></article>
           <article><span>${t.tokenPrice}</span><strong>${money.format(project.token_price)}</strong></article>
           <article><span>Readiness</span><strong>${progress.percent}%</strong></article>
-        </section>
+        </section>`}
         ${project.slug === "finca-cacao-bayaguana" ? cacaoMicrositeSections(req, project, offering, mint, raisedPct, tokenizasUrl) : ""}
+        ${project.category === "music" ? musicMicrositeSections(req, project, offering, raisedPct, tokenizasUrl) : ""}
         <section class="microSection">
           <div>
             <p class="eyebrow">${t.offering}</p>

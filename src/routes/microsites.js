@@ -385,6 +385,10 @@ function projectAliases(project) {
     aliases.add("cacaobayaguana");
     aliases.add("cacaobayagua");
   }
+  if (project.slug === "lionel-the-star-entertainment") {
+    aliases.add("lionelthestar");
+    aliases.add("lionelthestarentertainment");
+  }
   return aliases;
 }
 

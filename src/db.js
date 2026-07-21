@@ -395,6 +395,7 @@ function migrate() {
     db.run("UPDATE projects SET microsite_slug = 'cacaobayaguana' WHERE slug = 'finca-cacao-bayaguana'");
     db.run("UPDATE projects SET microsite_slug = replace(replace(slug, '-', ''), '_', '') WHERE microsite_slug IS NULL OR microsite_slug = ''");
   }
+  db.run("UPDATE projects SET microsite_slug = 'lionelthestar' WHERE slug = 'lionel-the-star-entertainment'");
   if (!leadColumns.includes("status")) {
     db.run("ALTER TABLE leads ADD COLUMN status TEXT NOT NULL DEFAULT 'new'");
   }

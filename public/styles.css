@@ -996,8 +996,12 @@ textarea {
   color: #173b24;
   background: #ffe082;
 }
-.cacaoLang span {
-  font-size: 14px;
+.cacaoLang img {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.14);
 }
 .cacaoHeroContent {
   position: relative;

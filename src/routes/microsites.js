@@ -6,7 +6,7 @@ const { localizeProject } = require("../lib/project-content");
 const { money, number, statusLabel } = require("../lib/ui");
 
 const reservedHosts = new Set(["", "www", "tokenizas", "admin", "api", "mail"]);
-const languageFlags = { es: "🇩🇴", en: "🇺🇸", de: "🇩🇪", fr: "🇫🇷" };
+const languageFlags = { es: "/flags/es.svg", en: "/flags/en.svg", de: "/flags/de.svg", fr: "/flags/fr.svg" };
 const checklistText = {
   es: {
     owner_kyb: "KYB del dueno o empresa emisora",
@@ -300,7 +300,7 @@ function formatText(template, values) {
 
 function cacaoLanguageSwitch(req) {
   const current = getLang(req);
-  return `<div class="cacaoLang">${["es", "en", "de", "fr"].map((lang) => `<a class="${current === lang ? "active" : ""}" href="?lang=${lang}#inicio"><span>${languageFlags[lang]}</span>${lang.toUpperCase()}</a>`).join("")}</div>`;
+  return `<div class="cacaoLang">${["es", "en", "de", "fr"].map((lang) => `<a class="${current === lang ? "active" : ""}" href="?lang=${lang}#inicio"><img src="${languageFlags[lang]}" alt="${lang.toUpperCase()}" loading="lazy" decoding="async" />${lang.toUpperCase()}</a>`).join("")}</div>`;
 }
 
 function cacaoLogo(req) {

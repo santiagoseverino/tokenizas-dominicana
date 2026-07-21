@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 22" role="img" aria-label="Dominican Republic flag">
+  <rect width="32" height="22" fill="#fff"/>
+  <rect width="13" height="8.5" fill="#002d62"/>
+  <rect x="19" width="13" height="8.5" fill="#ce1126"/>
+  <rect y="13.5" width="13" height="8.5" fill="#ce1126"/>
+  <rect x="19" y="13.5" width="13" height="8.5" fill="#002d62"/>
+  <circle cx="16" cy="11" r="2.6" fill="#fff" stroke="#0f5132" stroke-width=".6"/>
+  <path d="M16 8.8l.8 1.5 1.7.2-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.2z" fill="#ce1126"/>
+</svg>

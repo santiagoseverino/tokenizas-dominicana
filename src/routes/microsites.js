@@ -366,12 +366,40 @@ function normalizeAlias(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function platformHost() {
+  try {
+    return new URL(config.siteUrl).hostname.toLowerCase();
+  } catch (_) {
+    return "tokenizas.dominicana.com";
+  }
+}
+
 function rootDomain() {
   try {
     return new URL(config.siteUrl).hostname.replace(/^tokenizas\./, "");
   } catch (_) {
     return "dominicana.com";
   }
+}
+
+function micrositeSubdomainFromHost(host) {
+  const cleanHost = normalizeHost(host);
+  const appHost = platformHost();
+  const root = rootDomain();
+  const ignoredHosts = new Set([appHost, root, `www.${appHost}`, `www.${root}`]);
+  if (!cleanHost || ignoredHosts.has(cleanHost)) return "";
+
+  const platformSuffix = `.${appHost}`;
+  if (cleanHost.endsWith(platformSuffix)) {
+    return cleanHost.slice(0, -platformSuffix.length).split(".")[0];
+  }
+
+  const rootSuffix = `.${root}`;
+  if (cleanHost.endsWith(rootSuffix)) {
+    return cleanHost.slice(0, -rootSuffix.length).split(".")[0];
+  }
+
+  return "";
 }
 
 function projectAliases(project) {
@@ -660,10 +688,8 @@ function micrositeHtml(req, project) {
 
 function registerMicrositeRoutes(app) {
   app.get("*", (req, res, next) => {
-    const host = normalizeHost(req.headers["x-forwarded-host"] || req.headers.host);
-    const domain = rootDomain();
-    if (!host.endsWith(`.${domain}`)) return next();
-    const subdomain = host.slice(0, -1 * (`.${domain}`).length);
+    const subdomain = micrositeSubdomainFromHost(req.headers["x-forwarded-host"] || req.headers.host);
+    if (!subdomain) return next();
     const project = findProjectBySubdomain(subdomain);
     if (!project) return next();
     const localized = localizeProject(project, req);

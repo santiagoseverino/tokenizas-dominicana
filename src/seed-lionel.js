@@ -6,6 +6,7 @@ const { ensureProjectMint } = require("./lib/tokenization");
   const now = new Date().toISOString();
   const project = {
     slug: "lionel-the-star-entertainment",
+    microsite_slug: "lionelthestar",
     category: "music",
     title: "Lionel The Star Entertainment",
     location: "Republica Dominicana / Puerto Rico / Florida / Nueva York",
@@ -27,11 +28,12 @@ const { ensureProjectMint } = require("./lib/tokenization");
   if (existing) {
     run(`
       UPDATE projects
-      SET category = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
+      SET microsite_slug = ?, category = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
           token_symbol = ?, token_supply = ?, token_price = ?, expected_yield = ?, status = ?, image_url = ?,
           description = ?, risk_level = ?
       WHERE slug = ?
     `, [
+      project.microsite_slug,
       project.category,
       project.title,
       project.location,
@@ -52,10 +54,11 @@ const { ensureProjectMint } = require("./lib/tokenization");
   } else {
     run(`
       INSERT INTO projects
-      (slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (slug, microsite_slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       project.slug,
+      project.microsite_slug,
       project.category,
       project.title,
       project.location,

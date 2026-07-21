@@ -310,6 +310,38 @@ h3 { font-size: 21px; }
   margin-bottom: 14px;
 }
 .cardStats { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-weight: 750; }
+.projectSummaryHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  align-items: center;
+  gap: 34px;
+  padding: 46px 42px 34px;
+  background: linear-gradient(135deg, #eef8f7, #f8fbff);
+}
+.projectSummaryCopy {
+  max-width: 820px;
+}
+.projectSummaryCopy h1 {
+  margin: 0 0 14px;
+  max-width: 760px;
+}
+.projectSummaryCopy .lead {
+  color: var(--muted);
+  max-width: 720px;
+}
+.projectSummaryImage {
+  justify-self: end;
+  width: 100%;
+  max-width: 420px;
+}
+.projectSummaryImage img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 45px rgba(8, 47, 73, .16);
+}
 .detailGrid, .split {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(320px, .6fr);
@@ -770,8 +802,9 @@ textarea {
   .actions { margin-top: 22px; }
   .actions .button { width: 100%; }
   h1 { font-size: 42px; }
-  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview, .verificationGrid, .inlineForm { grid-template-columns: 1fr; }
-  .section, .page, .detailGrid, .split { padding: 28px 18px; }
+  .metrics, .grid.cards, .detailGrid, .split, .investForm, .investPage, .miniProject, .legalGrid, .featureGrid, .valueSection, .contactIntro, .formGrid, .imagePreview, .verificationGrid, .inlineForm, .projectSummaryHero { grid-template-columns: 1fr; }
+  .section, .page, .detailGrid, .split, .projectSummaryHero { padding: 28px 18px; }
+  .projectSummaryImage { justify-self: stretch; max-width: 100%; }
   .contactPage { padding-top: 0; }
   .contactIntro { padding: 36px 0; }
   .ctaBand { align-items: flex-start; flex-direction: column; }

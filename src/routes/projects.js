@@ -35,6 +35,13 @@ function renderProjectGridPage(req, { title, eyebrow, subtitle, projects }) {
   `, req);
 }
 
+function shortSummary(text, max = 220) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const sentence = clean.slice(0, max).replace(/\s+\S*$/, "");
+  return `${sentence}...`;
+}
+
 function registerProjectRoutes(app) {
   app.get("/projects", (req, res) => {
     const category = String(req.query.category || "");
@@ -96,18 +103,24 @@ function registerProjectRoutes(app) {
 
     res.send(layout(project.title, `
       <main>
-        <section class="detailHero" style="background-image:url('${project.image_url}')">
-          <div class="heroOverlay"></div>
-          <div class="heroContent narrow">
+        <section class="projectSummaryHero">
+          <div class="projectSummaryCopy">
             <p class="eyebrow">${project.location}</p>
             <h1>${project.title}</h1>
-            <p class="lead">${project.description}</p>
+            <p class="lead">${shortSummary(project.description)}</p>
+            <div class="actions">
+              <a class="button primary" href="#invertir">${t.testOrder}</a>
+              <a class="button" href="#mas-informacion">Mas informacion</a>
+            </div>
+          </div>
+          <div class="projectSummaryImage">
+            <img src="${project.image_url}" alt="${project.title}" />
           </div>
         </section>
-        <section class="detailGrid">
+        <section class="detailGrid" id="invertir">
           <div>
             <h2>${t.offerStructure}</h2>
-            <p>${project.legal_structure}</p>
+            <p>${shortSummary(project.legal_structure, 180)}</p>
             <div class="progress"><span style="width:${raisedPct}%"></span></div>
             <p class="muted">${money.format(offering.raised)} ${t.reservedOf} ${money.format(offering.hard_cap)}.</p>
             <form class="investForm" method="post" action="/invest">
@@ -128,6 +141,10 @@ function registerProjectRoutes(app) {
             ${fact(t.risk, project.risk_level)}
             ${fact("Lockup", `${offering.lockup_months} ${t.months}`)}
           </aside>
+        </section>
+        <section class="split" id="mas-informacion">
+          <div class="panel"><h3>Mas informacion del proyecto</h3><p>${project.description}</p><div class="event"><b>${t.offerStructure}</b><p>${project.legal_structure}</p></div></div>
+          <aside class="panel"><h3>${t.keyData}</h3>${fact(t.target, money.format(project.target_raise))}${fact(t.minimum, money.format(project.min_investment))}${fact("Token", project.token_symbol)}${fact("Supply", number.format(project.token_supply))}${fact(t.expectedYield, `${project.expected_yield}%`)}</aside>
         </section>
         <section class="split">
           <div class="panel"><h3>${t.documents}</h3>${docs.map((doc) => `<div class="row"><span>${doc.title}</span><b>${statusLabel(doc.status, req)}</b></div>`).join("")}</div>

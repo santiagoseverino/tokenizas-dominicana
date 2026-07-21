@@ -64,6 +64,13 @@ const cacaoSlides = [
   "/cacao/cacao-branch.webp"
 ];
 
+const musicSlides = [
+  "/lionel/lionel-portrait.jpg",
+  "/lionel/lionel-video-shoot.jpg",
+  "/lionel/lionel-travel.jpg",
+  "/lionel/lionel-live.jpg"
+];
+
 const cacaoText = {
   es: {
     logoSub: "Token Bayaguana",
@@ -257,6 +264,11 @@ const musicText = {
     stats: ["Canciones originales", "Meta inicial", "Canales de ingreso", "Token"],
     revenueTitle: "Fuentes de ingreso",
     revenueLead: "El proyecto busca diversificar ingresos alrededor del artista, el catalogo y la marca.",
+    mediaTitle: "Imagen, video y catalogo",
+    mediaLead: "Material visual y musical para impulsar el lanzamiento comercial, redes, eventos y presentaciones a inversionistas.",
+    videoTitle: "Video promocional",
+    songsTitle: "Catalogo inicial",
+    songs: ["Bachata romantica", "Merengue comercial", "Colaboraciones urbanas", "Contenido para eventos"],
     revenue: [
       ["Streaming y YouTube", "Monetizacion digital del catalogo, videos y contenido promocional."],
       ["Eventos y turismo", "Presentaciones, experiencias, activaciones y oportunidades con hoteles o venues."],
@@ -283,6 +295,11 @@ const musicText = {
     stats: ["Original songs", "Initial target", "Revenue channels", "Token"],
     revenueTitle: "Revenue streams",
     revenueLead: "The project is designed to diversify revenue around the artist, catalog, and brand.",
+    mediaTitle: "Image, video, and catalog",
+    mediaLead: "Visual and musical assets to support the commercial launch, social channels, events, and investor presentations.",
+    videoTitle: "Promotional video",
+    songsTitle: "Initial catalog",
+    songs: ["Romantic bachata", "Commercial merengue", "Urban collaborations", "Event-ready content"],
     revenue: [
       ["Streaming and YouTube", "Digital monetization of the catalog, videos, and promotional content."],
       ["Events and tourism", "Performances, experiences, activations, and opportunities with hotels or venues."],
@@ -309,6 +326,11 @@ const musicText = {
     stats: ["Originalsongs", "Anfangsziel", "Einnahmekanaele", "Token"],
     revenueTitle: "Einnahmequellen",
     revenueLead: "Das Projekt diversifiziert Einnahmen rund um Kuenstler, Katalog und Marke.",
+    mediaTitle: "Image, Video und Katalog",
+    mediaLead: "Visuelle und musikalische Assets fuer Launch, Social Media, Events und Investorenpraesentationen.",
+    videoTitle: "Promotion-Video",
+    songsTitle: "Erster Katalog",
+    songs: ["Romantische Bachata", "Kommerzieller Merengue", "Urbane Kooperationen", "Event-taugliche Inhalte"],
     revenue: [
       ["Streaming und YouTube", "Digitale Monetarisierung von Katalog, Videos und Promotion-Inhalten."],
       ["Events und Tourismus", "Auftritte, Erlebnisse, Aktivierungen und Chancen mit Hotels oder Veranstaltungsorten."],
@@ -335,6 +357,11 @@ const musicText = {
     stats: ["Chansons originales", "Objectif initial", "Canaux de revenus", "Token"],
     revenueTitle: "Sources de revenus",
     revenueLead: "Le projet vise a diversifier les revenus autour de l'artiste, du catalogue et de la marque.",
+    mediaTitle: "Image, video et catalogue",
+    mediaLead: "Assets visuels et musicaux pour soutenir le lancement commercial, les reseaux, les evenements et les presentations investisseurs.",
+    videoTitle: "Video promotionnelle",
+    songsTitle: "Catalogue initial",
+    songs: ["Bachata romantique", "Merengue commercial", "Collaborations urbaines", "Contenu pour evenements"],
     revenue: [
       ["Streaming et YouTube", "Monetisation digitale du catalogue, des videos et contenus promotionnels."],
       ["Evenements et tourisme", "Concerts, experiences, activations et opportunites avec hotels ou lieux."],
@@ -558,10 +585,13 @@ function genericMicrositeHero(project, tokenizasUrl, req) {
 function musicHero(req, project, tokenizasUrl) {
   const t = musicT(req);
   return `<section class="musicHero" id="inicio">
-    <div class="musicHeroImage"><img src="/lionel-the-star.jpg" alt="${project.title}" loading="eager" decoding="async" /></div>
+    <div class="musicHeroSlider" aria-hidden="true">
+      ${musicSlides.map((src, index) => `<img src="${src}" alt="" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />`).join("")}
+    </div>
     <header class="musicNav">
       <a class="musicLogo" href="#inicio"><span>LT</span><strong>Lionel</strong></a>
       <nav>
+        <a href="#media">${t.mediaTitle}</a>
         <a href="#revenue">${t.revenueTitle}</a>
         <a href="#fondos">${t.fundsTitle}</a>
         <a href="#roadmap">${t.roadmapTitle}</a>
@@ -588,6 +618,27 @@ function musicMicrositeSections(req, project, offering, raisedPct, tokenizasUrl)
   return `
     <section class="musicStats">
       ${t.stats.map((label, index) => `<article><span>${label}</span><strong>${statValues[index]}</strong></article>`).join("")}
+    </section>
+    <section class="musicMedia" id="media">
+      <div class="musicMediaIntro">
+        <p class="eyebrow">Lionel The Star</p>
+        <h2>${t.mediaTitle}</h2>
+        <p>${t.mediaLead}</p>
+      </div>
+      <div class="musicMediaGrid">
+        <article class="musicVideoCard">
+          <video controls preload="metadata" poster="/lionel/lionel-video-shoot.jpg">
+            <source src="/lionel/lionel-performance.mp4" type="video/mp4" />
+          </video>
+          <h3>${t.videoTitle}</h3>
+        </article>
+        <article class="musicSongsCard">
+          <h3>${t.songsTitle}</h3>
+          <div>
+            ${t.songs.map((song, index) => `<span><b>${String(index + 1).padStart(2, "0")}</b>${song}</span>`).join("")}
+          </div>
+        </article>
+      </div>
     </section>
     <section class="musicRevenue" id="revenue">
       <div>

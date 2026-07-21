@@ -19,7 +19,7 @@ const { ensureProjectMint } = require("./lib/tokenization");
     token_price: 1,
     expected_yield: 20,
     status: "open",
-    image_url: "/lionel-the-star.jpg",
+    image_url: "/lionel/lionel-portrait.jpg",
     description: "Lionel The Star busca levantar US$10,000 para acelerar la comercializacion de un catalogo inicial de 14 canciones originales de bachata y merengue, varios videos musicales ya producidos, presencia digital y una estrategia enfocada en eventos, turismo, streaming, YouTube, patrocinios, merchandising y licencias.",
     risk_level: "Alto"
   };

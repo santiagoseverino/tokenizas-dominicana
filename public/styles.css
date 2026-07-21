@@ -1152,15 +1152,46 @@ textarea {
   z-index: 1;
   background: linear-gradient(90deg, rgba(18,8,22,.94), rgba(76,21,92,.78) 52%, rgba(247,201,72,.16));
 }
-.musicHeroImage {
+.musicHeroSlider {
   position: absolute;
   inset: 0;
 }
-.musicHeroImage img {
+.musicHeroSlider img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center;
+  opacity: 0;
+  transform: scale(1.04);
+  animation: musicSlide 24s infinite;
+}
+.musicHeroSlider img:nth-child(1) {
+  animation-delay: 0s;
+}
+.musicHeroSlider img:nth-child(2) {
+  animation-delay: 6s;
+}
+.musicHeroSlider img:nth-child(3) {
+  animation-delay: 12s;
+}
+.musicHeroSlider img:nth-child(4) {
+  animation-delay: 18s;
+}
+@keyframes musicSlide {
+  0%, 20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  25%, 95% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 .musicNav {
   position: relative;
@@ -1244,6 +1275,70 @@ textarea {
   margin-top: 8px;
   color: #ffe082;
   font-size: 28px;
+}
+.musicMedia {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 58px 24px 0;
+}
+.musicMediaIntro {
+  max-width: 760px;
+}
+.musicMediaIntro h2 {
+  font-size: 40px;
+}
+.musicMediaGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  gap: 18px;
+  margin-top: 22px;
+  align-items: stretch;
+}
+.musicVideoCard,
+.musicSongsCard {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 34px rgba(8,47,73,.07);
+}
+.musicVideoCard video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #120816;
+}
+.musicVideoCard h3,
+.musicSongsCard h3 {
+  margin: 0;
+  padding: 18px 20px;
+}
+.musicSongsCard {
+  padding: 4px 0 12px;
+}
+.musicSongsCard div {
+  display: grid;
+  gap: 10px;
+  padding: 0 20px;
+}
+.musicSongsCard span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 850;
+}
+.musicSongsCard b {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #120816;
+  background: #ffe082;
 }
 .musicRevenue,
 .musicRoadmap {
@@ -1454,12 +1549,21 @@ textarea {
   .musicNav nav a { white-space: nowrap; }
   .musicHeroContent { padding: 86px 22px 70px; }
   .musicHeroContent h1 { font-size: 44px; }
-  .musicStats, .musicRevenue, .musicRevenueGrid, .musicRoadmap > div { grid-template-columns: 1fr; }
+  .musicStats, .musicMediaGrid, .musicRevenue, .musicRevenueGrid, .musicRoadmap > div { grid-template-columns: 1fr; }
   .musicStats { margin-top: -34px; }
-  .musicRevenue h2, .musicRoadmap h2 { font-size: 32px; }
+  .musicMediaIntro h2, .musicRevenue h2, .musicRoadmap h2 { font-size: 32px; }
   .receiptItem { grid-template-columns: 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
   .adminHero { flex-direction: column; padding: 22px; }
   .adminHero h1 { font-size: 34px; }
   .adminActions { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .musicHeroSlider img {
+    animation: none;
+  }
+  .musicHeroSlider img:first-child {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -9,6 +9,7 @@ const { parseMultipart } = require("../lib/multipart");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
+const { seedCacaoMarketplaceDemo } = require("../lib/marketplace-demo");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -258,8 +259,9 @@ function registerAdminRoutes(app) {
             <h1>Control del marketplace</h1>
             <p class="muted">Supervisa listados, compras pendientes de transferencia SPL, ventas completadas y trazabilidad on-chain.</p>
           </div>
-          <div class="adminActions"><a class="button small" href="/admin">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+          <div class="adminActions"><form method="post" action="/admin/marketplace/seed-cacao"><button class="button primary small" type="submit">Crear demo CACAO</button></form><a class="button small" href="/admin">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
         </div>
+        ${req.query.seeded ? `<div class="success">Demo CACAO creado o actualizado. Revisa listados activos y ventas pendientes.</div>` : ""}
         <section class="metrics compact">
           <article><strong>${activeListings.length}</strong><span>Listados activos</span></article>
           <article><strong>${pendingTrades.length}</strong><span>Ventas pendientes</span></article>
@@ -284,6 +286,15 @@ function registerAdminRoutes(app) {
     store.run("UPDATE marketplace_trades SET status = 'review' WHERE id = ? AND status = 'pending_onchain_transfer'", [req.params.id]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'review_marketplace_trade', ?, 'Trade marcado en revision', ?)", [`trade:${req.params.id}`, new Date().toISOString()]);
     res.redirect("/admin/marketplace");
+  });
+
+  app.post("/admin/marketplace/seed-cacao", requireAdmin, (req, res) => {
+    try {
+      seedCacaoMarketplaceDemo();
+      res.redirect("/admin/marketplace?seeded=1");
+    } catch (error) {
+      res.status(400).send(layout("Admin Marketplace", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/marketplace">Volver</a></p></div></main>`, req));
+    }
   });
 
   app.get("/admin/settings", requireAdmin, (req, res) => {

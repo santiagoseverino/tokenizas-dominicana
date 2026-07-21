@@ -28,35 +28,48 @@ function registerMarketplaceRoutes(app) {
   app.get("/marketplace", (req, res) => {
     const user = currentInvestor(req);
     const items = listings(req);
+    const buyableItems = items.filter((item) => !user || Number(user.id) !== Number(item.seller_user_id));
+    const ownItems = user ? items.filter((item) => Number(user.id) === Number(item.seller_user_id)) : [];
+    const renderListingCard = (item, { ownListing = false } = {}) => {
+      const total = Number(item.quantity) * Number(item.price_per_token);
+      return `<article class="card">
+        <img src="${item.image_url}" alt="${item.project_title}" />
+        <div class="cardBody">
+          <div class="pill">${item.token_symbol}${String(item.seller_name || "").includes("Demo") ? " Demo" : ""}</div>
+          <h3>${item.project_title}</h3>
+          <p>${item.location}</p>
+          <div class="cardStats">
+            <span>${number.format(item.quantity)} tokens</span>
+            <span>${money.format(item.price_per_token)} / token</span>
+          </div>
+          <p class="muted">Vendedor: ${item.seller_name} - Total: ${money.format(total)}</p>
+          ${user && !ownListing ? `<form method="post" action="/marketplace/listings/${item.id}/buy"><button class="button primary small" type="submit">Comprar listado</button></form>` : ""}
+          ${ownListing ? `<p class="muted">Este listado es tuyo. Para probar compra, entra con otro usuario inversionista.</p><form method="post" action="/marketplace/listings/${item.id}/cancel"><button class="button danger small" type="submit">Cancelar listado</button></form>` : ""}
+          ${!user ? `<a class="button small" href="/investor/login">Entrar para comprar</a>` : ""}
+        </div>
+      </article>`;
+    };
     res.send(layout("Marketplace", `
       <main class="page">
         <div class="sectionHead">
           <p class="eyebrow">Marketplace secundario</p>
           <h1>Compra y venta de tokens de proyectos</h1>
-          <p class="muted">Mercado interno para probar liquidez secundaria. Las compras mueven el balance dentro de Tokenizas; la transferencia SPL wallet-to-wallet queda como siguiente fase.</p>
-          ${user ? `<p><a class="button small" href="/dashboard">Mi dashboard</a></p>` : `<p><a class="button primary small" href="/investor/login">Entrar para comprar</a></p>`}
+          <p class="muted">Compra tokens listados por otros inversionistas. La venta queda pendiente hasta que el vendedor complete la transferencia SPL desde Phantom y Tokenizas la verifique en Solana devnet.</p>
+          ${user ? `<p><a class="button small" href="/dashboard">Mi dashboard</a></p>` : `<p><a class="button primary small" href="/investor/login">Entrar para comprar</a><a class="button small" href="/investor/register">Crear cuenta</a></p>`}
         </div>
-        <section class="grid cards">
-          ${items.map((item) => {
-            const total = Number(item.quantity) * Number(item.price_per_token);
-            const ownListing = user && Number(user.id) === Number(item.seller_user_id);
-            return `<article class="card">
-              <img src="${item.image_url}" alt="${item.project_title}" />
-              <div class="cardBody">
-                <div class="pill">${item.token_symbol}</div>
-                <h3>${item.project_title}</h3>
-                <p>${item.location}</p>
-                <div class="cardStats">
-                  <span>${number.format(item.quantity)} tokens</span>
-                  <span>${money.format(item.price_per_token)} / token</span>
-                </div>
-                <p class="muted">Vendedor: ${item.seller_name} - Total: ${money.format(total)}</p>
-                ${user && !ownListing ? `<form method="post" action="/marketplace/listings/${item.id}/buy"><button class="button primary small" type="submit">Comprar listado</button></form>` : ""}
-                ${ownListing ? `<form method="post" action="/marketplace/listings/${item.id}/cancel"><button class="button danger small" type="submit">Cancelar listado</button></form>` : ""}
-                ${!user ? `<a class="button small" href="/investor/login">Entrar para comprar</a>` : ""}
-              </div>
-            </article>`;
-          }).join("") || `<div class="panel"><p class="muted">Todavia no hay tokens listados en el marketplace.</p></div>`}
+        ${req.query.trade === "unavailable" ? `<div class="alert">Ese listado ya no esta disponible o el vendedor no tiene balance suficiente.</div>` : ""}
+        <section class="panel">
+          <h3>Disponible para comprar</h3>
+          <div class="grid cards">${buyableItems.map((item) => renderListingCard(item)).join("") || `<p class="muted">No hay listados disponibles para tu usuario. Si eres admin, entra a /admin/marketplace y pulsa Crear demo CACAO.</p>`}</div>
+        </section>
+        ${user ? `<section class="panel"><h3>Mis listados</h3><div class="grid cards">${ownItems.map((item) => renderListingCard(item, { ownListing: true })).join("") || `<p class="muted">No tienes listados activos. Puedes listar tokens desde tu dashboard, en Wallet y tokens.</p>`}</div></section>` : ""}
+        <section class="panel">
+          <h3>Como funciona la compra</h3>
+          <div class="featureGrid">
+            <article class="featureCard"><strong>1</strong><h3>Compra listado</h3><p>El comprador selecciona un listado disponible.</p></article>
+            <article class="featureCard"><strong>2</strong><h3>Transferencia SPL</h3><p>El vendedor transfiere los tokens desde Phantom al comprador.</p></article>
+            <article class="featureCard"><strong>3</strong><h3>Verificacion</h3><p>Tokenizas verifica mint, cantidad y wallet destino en Solana devnet.</p></article>
+          </div>
         </section>
       </main>
     `, req));

@@ -870,6 +870,110 @@ textarea {
 .microSection h2 {
   font-size: 40px;
 }
+.farmTokenBand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 34px;
+  align-items: center;
+  max-width: 1180px;
+  margin: 58px auto 0;
+  padding: 42px 24px;
+  color: white;
+  background: linear-gradient(135deg, #173b24, #0f766e 58%, #d8a31a);
+  border-radius: 8px;
+  box-shadow: 0 22px 58px rgba(15,118,110,.18);
+}
+.farmTokenBand h2 {
+  max-width: 780px;
+  color: white;
+  font-size: 42px;
+}
+.farmTokenBand p {
+  max-width: 760px;
+  color: rgba(255,255,255,.84);
+}
+.tokenGlass {
+  padding: 28px;
+  border: 1px solid rgba(255,255,255,.34);
+  border-radius: 8px;
+  background: rgba(255,255,255,.14);
+  backdrop-filter: blur(10px);
+}
+.tokenGlass span,
+.tokenGlass strong,
+.tokenGlass small {
+  display: block;
+}
+.tokenGlass span {
+  color: #ffe082;
+  font-weight: 950;
+  font-size: 18px;
+}
+.tokenGlass strong {
+  margin-top: 8px;
+  color: white;
+  font-size: 48px;
+}
+.tokenGlass small {
+  overflow-wrap: anywhere;
+  color: rgba(255,255,255,.78);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.farmGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+}
+.farmGrid article,
+.farmRoadmap article {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 34px rgba(8,47,73,.07);
+}
+.farmGrid span,
+.farmRoadmap span {
+  color: var(--brand);
+  font-weight: 950;
+}
+.farmUseFunds {
+  align-items: start;
+}
+.fundRows {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.fundRows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fundRows span {
+  color: var(--muted);
+  font-weight: 800;
+}
+.farmRoadmap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 58px 24px 0;
+}
+.farmRoadmap h2 {
+  font-size: 40px;
+}
+.farmRoadmap > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
 .inlineForm {
   display: grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr)) auto;
@@ -1026,6 +1130,9 @@ textarea {
   .microHero h1 { font-size: 42px; }
   .microStats, .microSection { grid-template-columns: 1fr; }
   .microStats { margin-top: -34px; }
+  .farmTokenBand, .farmGrid, .farmRoadmap > div { grid-template-columns: 1fr; }
+  .farmTokenBand { margin: 34px 18px 0; padding: 28px 18px; }
+  .farmTokenBand h2, .farmRoadmap h2, .microSection h2 { font-size: 32px; }
   .receiptItem { grid-template-columns: 1fr; }
   .holding b, .holding span, .holding em { grid-column: 2; }
   .adminHero { flex-direction: column; padding: 22px; }

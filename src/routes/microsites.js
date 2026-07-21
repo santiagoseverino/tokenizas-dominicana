@@ -45,6 +45,73 @@ function findProjectBySubdomain(subdomain) {
   return store.all("SELECT * FROM projects ORDER BY id").find((project) => projectAliases(project).has(alias));
 }
 
+function cacaoMicrositeSections(project, offering, mint, raisedPct, tokenizasUrl) {
+  const hardCap = offering.hard_cap || project.target_raise;
+  return `
+    <section class="farmTokenBand">
+      <div>
+        <p class="eyebrow">CACAO Token</p>
+        <h2>Tokenizacion agricola para una finca de cacao en Bayaguana.</h2>
+        <p>El token CACAO representa una participacion economica digital de prueba vinculada al desarrollo productivo de la finca, mantenimiento operativo, preparacion de cosecha y formalizacion comercial.</p>
+      </div>
+      <div class="tokenGlass">
+        <span>${project.token_symbol}</span>
+        <strong>${money.format(project.token_price)}</strong>
+        <p>precio por token demo</p>
+        ${mint ? `<small>${mint.mint_address}</small>` : `<small>Mint Solana en preparacion</small>`}
+      </div>
+    </section>
+    <section class="farmGrid">
+      <article>
+        <span>01</span>
+        <h3>Produccion</h3>
+        <p>Capital para mejoras productivas, mantenimiento agricola, herramientas, preparacion de cosecha y organizacion operativa.</p>
+      </article>
+      <article>
+        <span>02</span>
+        <h3>Token</h3>
+        <p>Supply configurado de ${number.format(project.token_supply)} ${project.token_symbol}, con compras fraccionarias para pruebas en Solana devnet.</p>
+      </article>
+      <article>
+        <span>03</span>
+        <h3>Seguimiento</h3>
+        <p>Readiness, documentos, mint, pagos y emision de tokens se verifican desde Tokenizas Dominicana.</p>
+      </article>
+    </section>
+    <section class="microSection farmUseFunds">
+      <div>
+        <p class="eyebrow">Uso de fondos</p>
+        <h2>Meta inicial: ${money.format(project.target_raise)}</h2>
+        <p>La ronda demo busca validar el flujo completo: interes del inversionista, pago en Solana devnet, emision SPL y balance visible en wallet.</p>
+        <div class="fundRows">
+          <div><span>Mejoras y mantenimiento agricola</span><strong>40%</strong></div>
+          <div><span>Preparacion de cosecha y operacion</span><strong>30%</strong></div>
+          <div><span>Formalizacion, documentos y seguimiento</span><strong>20%</strong></div>
+          <div><span>Reserva operativa</span><strong>10%</strong></div>
+        </div>
+      </div>
+      <aside class="panel">
+        <h3>Progreso de ronda</h3>
+        <div class="progress"><span style="width:${raisedPct}%"></span></div>
+        <div class="fact"><span>Reservado</span><strong>${money.format(offering.raised || 0)}</strong></div>
+        <div class="fact"><span>Meta</span><strong>${money.format(hardCap)}</strong></div>
+        <div class="fact"><span>Minimo</span><strong>${money.format(project.min_investment)}</strong></div>
+        <a class="button primary" href="${tokenizasUrl}/projects/${project.slug}#invertir">Comprar CACAO</a>
+      </aside>
+    </section>
+    <section class="farmRoadmap">
+      <p class="eyebrow">Roadmap</p>
+      <h2>Plan de ejecucion</h2>
+      <div>
+        <article><span>Q1</span><h3>Expediente</h3><p>Completar documentos, permisos y revision del proyecto.</p></article>
+        <article><span>Q2</span><h3>Tokenizacion</h3><p>Crear mint, metadata y flujo de emision controlada.</p></article>
+        <article><span>Q3</span><h3>Produccion</h3><p>Ejecutar mejoras de finca y seguimiento operativo.</p></article>
+        <article><span>Q4</span><h3>Reportes</h3><p>Publicar avances, balances y resultados de la ronda demo.</p></article>
+      </div>
+    </section>
+  `;
+}
+
 function micrositeHtml(req, project) {
   const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]) || {};
   const docs = store.all("SELECT * FROM documents WHERE project_id = ?", [project.id]);
@@ -83,6 +150,7 @@ function micrositeHtml(req, project) {
           <article><span>Precio token</span><strong>${money.format(project.token_price)}</strong></article>
           <article><span>Readiness</span><strong>${progress.percent}%</strong></article>
         </section>
+        ${project.slug === "finca-cacao-bayaguana" ? cacaoMicrositeSections(project, offering, mint, raisedPct, tokenizasUrl) : ""}
         <section class="microSection">
           <div>
             <p class="eyebrow">Oferta</p>

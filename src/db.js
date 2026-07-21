@@ -292,6 +292,19 @@ function migrate() {
       status TEXT NOT NULL DEFAULT 'recorded',
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS project_checklist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      category TEXT NOT NULL,
+      item_key TEXT NOT NULL,
+      label TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT,
+      visible_to_owner INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL,
+      UNIQUE(project_id, item_key)
+    );
   `);
 
   const leadColumns = all("PRAGMA table_info(leads)").map((column) => column.name);

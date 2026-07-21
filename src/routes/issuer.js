@@ -5,6 +5,7 @@ const store = require("../db");
 const { readForm } = require("../lib/multipart");
 const { tr } = require("../lib/i18n");
 const { layout, money, statusLabel } = require("../lib/ui");
+const { checklistProgress, getProjectChecklist, statusLabels: checklistStatusLabels } = require("../lib/project-checklist");
 
 const issuerUploadDir = path.join(__dirname, "..", "..", "private", "issuer");
 
@@ -62,6 +63,8 @@ function statusPage(req, application, message = "") {
   const docs = store.all("SELECT * FROM issuer_documents WHERE application_id = ? ORDER BY uploaded_at DESC", [application.id]);
   const messages = store.all("SELECT * FROM issuer_messages WHERE application_id = ? ORDER BY id DESC LIMIT 20", [application.id]);
   const project = application.project_id ? store.get("SELECT * FROM projects WHERE id = ?", [application.project_id]) : null;
+  const checklist = project ? getProjectChecklist(project.id, true) : [];
+  const progress = checklistProgress(checklist);
   const steps = [
     ["Solicitud recibida", "approved"],
     ["Revision documental", ["review", "needs_more_info", "approved"].includes(application.status) ? "approved" : "submitted"],
@@ -80,6 +83,26 @@ function statusPage(req, application, message = "") {
       </div>
       ${message ? `<div class="success">${message}</div>` : ""}
       <section class="metrics compact">${steps.map(([label, status]) => `<article><strong>${statusLabel(status, req)}</strong><span>${label}</span></article>`).join("")}</section>
+      ${project ? `
+        <section class="panel adminPanel readinessPanel">
+          <div class="checklistHeader">
+            <div>
+              <p class="eyebrow">Readiness</p>
+              <h3>Checklist profesional</h3>
+              <p class="muted">Seguimiento de documentos, permisos, estructura legal y tokenizacion.</p>
+            </div>
+            <strong>${progress.percent}%</strong>
+          </div>
+          <div class="progress compactProgress"><span style="width:${progress.percent}%"></span></div>
+          <div class="ownerChecklist">
+            ${checklist.map((item) => `<div class="ownerCheckItem ${item.status}">
+              <b>${item.label}</b>
+              <span>${checklistStatusLabels[item.status] || item.status}</span>
+              ${item.notes ? `<p>${item.notes}</p>` : ""}
+            </div>`).join("")}
+          </div>
+        </section>
+      ` : ""}
       <section class="split">
         <div class="panel adminPanel">
           <h3>Resumen</h3>

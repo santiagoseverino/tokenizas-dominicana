@@ -11,6 +11,7 @@ const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokeniza
 const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
 const { seedCacaoMarketplaceDemo } = require("../lib/marketplace-demo");
 const { notifyProjectOwnerApproved, sendIssuerMessage } = require("../lib/notifications");
+const { checklistProgress, ensureProjectChecklist, getProjectChecklist, statusLabels: checklistStatusLabels, updateProjectChecklistItem } = require("../lib/project-checklist");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -118,7 +119,38 @@ function renderMarketplaceTrade(item) {
   return `<div class="event"><b>Trade #${item.id} - ${item.project_title}</b><span>Vendedor: ${item.seller_name} - Comprador: ${item.buyer_name}</span><p>${number.format(item.quantity)} ${item.token_symbol} - ${money.format(item.price_per_token)} / token - Total ${money.format(item.total_amount)} - ${item.status}</p>${item.mint_address ? `<span class="monoBreak">Mint: ${item.mint_address}</span>` : ""}${item.seller_wallet ? `<span class="monoBreak">Seller wallet: ${item.seller_wallet}</span>` : ""}${item.buyer_wallet ? `<span class="monoBreak">Buyer wallet: ${item.buyer_wallet}</span>` : ""}${item.transfer_signature ? `<span class="monoBreak">Firma: ${item.transfer_signature}</span>` : ""}<div class="inlineActions">${transferLink}${item.status === "pending_onchain_transfer" ? `<form method="post" action="/admin/marketplace/trades/${item.id}/review"><button class="button small" type="submit">Marcar en revision</button></form>` : ""}</div></div>`;
 }
 
-function projectForm(project = {}, offering = {}, error = "") {
+function renderProjectChecklistAdmin(project, checklist, progress) {
+  const options = Object.entries(checklistStatusLabels).map(([value, label]) => ({ value, label }));
+  return `
+    <section class="panel adminPanel readinessPanel">
+      <div class="checklistHeader">
+        <div>
+          <p class="eyebrow">Readiness</p>
+          <h3>Checklist profesional del proyecto</h3>
+          <p class="muted">${progress.done}/${progress.total} completados. Este progreso tambien se muestra en el portal del dueno.</p>
+        </div>
+        <strong>${progress.percent}%</strong>
+      </div>
+      <div class="progress compactProgress"><span style="width:${progress.percent}%"></span></div>
+      <div class="checklistList">
+        ${checklist.map((item) => `
+          <form class="checklistRow" method="post" action="/admin/projects/checklist/${item.id}">
+            <div>
+              <b>${item.label}</b>
+              <span>${item.category}</span>
+            </div>
+            <select name="status">${options.map((option) => `<option value="${option.value}" ${item.status === option.value ? "selected" : ""}>${option.label}</option>`).join("")}</select>
+            <input name="notes" value="${item.notes || ""}" placeholder="Nota para seguimiento" />
+            <label class="miniCheck"><input type="checkbox" name="visible_to_owner" value="1" ${Number(item.visible_to_owner) ? "checked" : ""} />Visible</label>
+            <button class="button small" type="submit">Guardar</button>
+          </form>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function projectForm(project = {}, offering = {}, error = "", extraContent = "") {
   const isEdit = Boolean(project.id);
   return `
     <main class="page">
@@ -156,6 +188,7 @@ function projectForm(project = {}, offering = {}, error = "") {
         <label>Documentos base, uno por linea<textarea name="documents" rows="5">${project.documents || "Titulo y certificacion registral\nTasacion independiente\nModelo financiero\nContrato de oferta\nInforme KYC/KYB del emisor"}</textarea></label>
         <button class="button primary" type="submit">${isEdit ? "Guardar proyecto" : "Crear proyecto"}</button>
       </form>
+      ${extraContent}
     </main>
   `;
 }
@@ -247,6 +280,7 @@ function createProjectFromIssuerApplication(application) {
   ].forEach((title) => {
     store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, 'legal', 'review')", [project.id, title]);
   });
+  ensureProjectChecklist(project.id);
   store.run("UPDATE issuer_applications SET status = 'approved', project_id = ?, reviewed_at = ? WHERE id = ?", [project.id, now, application.id]);
   store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'created_project_from_issuer', ?, ?, ?)", [application.project_name, `project:${project.id}`, now]);
   return project;
@@ -501,6 +535,7 @@ function registerAdminRoutes(app) {
     payload.documents.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).forEach((title) => {
       store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, ?, ?)", [project.id, title, "legal", "review"]);
     });
+    ensureProjectChecklist(project.id);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, ?, ?, ?, ?)", ["Admin", "created_project", project.title, project.slug, now]);
     res.redirect(`/admin/projects/${project.id}`);
   });
@@ -510,7 +545,20 @@ function registerAdminRoutes(app) {
     if (!project) return res.status(404).send("Proyecto no encontrado");
     const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]) || {};
     const documents = store.all("SELECT title FROM documents WHERE project_id = ? ORDER BY id", [project.id]).map((doc) => doc.title).join("\n");
-    res.send(layout(project.title, projectForm({ ...project, documents }, offering), req));
+    const checklist = getProjectChecklist(project.id);
+    const progress = checklistProgress(checklist);
+    res.send(layout(project.title, projectForm({ ...project, documents }, offering, "", renderProjectChecklistAdmin(project, checklist, progress)), req));
+  });
+
+  app.post("/admin/projects/checklist/:id", requireAdmin, (req, res) => {
+    const item = store.get("SELECT * FROM project_checklist WHERE id = ?", [req.params.id]);
+    if (!item) return res.status(404).send("Item no encontrado");
+    updateProjectChecklistItem(item.id, {
+      status: req.body.status,
+      notes: req.body.notes,
+      visibleToOwner: req.body.visible_to_owner === "1"
+    });
+    res.redirect(`/admin/projects/${item.project_id}`);
   });
 
   app.post("/admin/projects/:id", requireAdmin, async (req, res) => {

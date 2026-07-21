@@ -1,5 +1,6 @@
 const store = require("../db");
 const { tr } = require("../lib/i18n");
+const { checklistProgress, getProjectChecklist, statusLabels: checklistStatusLabels } = require("../lib/project-checklist");
 const { localizeProject, localizeProjects } = require("../lib/project-content");
 const { fact, layout, money, number, projectCard, statusLabel } = require("../lib/ui");
 
@@ -98,6 +99,8 @@ function registerProjectRoutes(app) {
     const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [project.id]);
     const docs = store.all("SELECT * FROM documents WHERE project_id = ?", [project.id]);
     const events = store.all("SELECT * FROM token_events WHERE project_id = ?", [project.id]);
+    const checklist = getProjectChecklist(project.id, true);
+    const checklistStats = checklistProgress(checklist);
     const raisedPct = Math.min(100, Math.round((offering.raised / offering.hard_cap) * 100));
     const t = tr(req).projectPages;
 
@@ -145,6 +148,22 @@ function registerProjectRoutes(app) {
         <section class="split" id="mas-informacion">
           <div class="panel"><h3>Mas informacion del proyecto</h3><p>${project.description}</p><div class="event"><b>${t.offerStructure}</b><p>${project.legal_structure}</p></div></div>
           <aside class="panel"><h3>${t.keyData}</h3>${fact(t.target, money.format(project.target_raise))}${fact(t.minimum, money.format(project.min_investment))}${fact("Token", project.token_symbol)}${fact("Supply", number.format(project.token_supply))}${fact(t.expectedYield, `${project.expected_yield}%`)}</aside>
+        </section>
+        <section class="page publicReadiness">
+          <div class="panel readinessPanel">
+            <div class="checklistHeader">
+              <div>
+                <p class="eyebrow">Readiness</p>
+                <h3>Checklist profesional del proyecto</h3>
+                <p class="muted">Resumen publico de due diligence, permisos, presupuesto y tokenizacion.</p>
+              </div>
+              <strong>${checklistStats.percent}%</strong>
+            </div>
+            <div class="progress compactProgress"><span style="width:${checklistStats.percent}%"></span></div>
+            <div class="ownerChecklist">
+              ${checklist.map((item) => `<div class="ownerCheckItem ${item.status}"><b>${item.label}</b><span>${checklistStatusLabels[item.status] || item.status}</span></div>`).join("")}
+            </div>
+          </div>
         </section>
         <section class="split">
           <div class="panel"><h3>${t.documents}</h3>${docs.map((doc) => `<div class="row"><span>${doc.title}</span><b>${statusLabel(doc.status, req)}</b></div>`).join("")}</div>

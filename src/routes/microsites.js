@@ -46,9 +46,9 @@ function findProjectBySubdomain(subdomain) {
 }
 
 const cacaoSlides = [
-  "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=1600&q=72",
-  "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&w=1600&q=72",
-  "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1600&q=72"
+  "/cacao/cacao-tree.webp",
+  "/cacao/cacao-pods-close.jpg",
+  "/cacao/cacao-branch.webp"
 ];
 
 function cacaoLogo() {

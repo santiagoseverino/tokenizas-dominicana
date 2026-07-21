@@ -269,6 +269,7 @@ function rootDomain() {
 
 function projectAliases(project) {
   const aliases = new Set([
+    normalizeAlias(project.microsite_slug),
     normalizeAlias(project.slug),
     normalizeAlias(project.title),
     normalizeAlias(String(project.slug || "").replace(/^finca-/, ""))
@@ -283,6 +284,8 @@ function projectAliases(project) {
 function findProjectBySubdomain(subdomain) {
   const alias = normalizeAlias(subdomain);
   if (!alias || reservedHosts.has(alias)) return null;
+  const direct = store.get("SELECT * FROM projects WHERE microsite_slug = ?", [alias]);
+  if (direct) return direct;
   return store.all("SELECT * FROM projects ORDER BY id").find((project) => projectAliases(project).has(alias));
 }
 

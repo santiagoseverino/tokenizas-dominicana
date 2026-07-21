@@ -42,6 +42,15 @@ function slugify(value) {
     .slice(0, 80);
 }
 
+function micrositeSlugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 48);
+}
+
 async function readForm(req) {
   if ((req.headers["content-type"] || "").includes("multipart/form-data")) return parseMultipart(req);
   return { fields: req.body || {}, files: {} };
@@ -154,6 +163,7 @@ function renderProjectChecklistAdmin(project, checklist, progress) {
 
 function projectForm(project = {}, offering = {}, error = "", extraContent = "") {
   const isEdit = Boolean(project.id);
+  const micrositeUrl = project.microsite_slug ? `https://${project.microsite_slug}.dominicana.com` : "";
   return `
     <main class="page">
       <div class="sectionHead">
@@ -167,6 +177,7 @@ function projectForm(project = {}, offering = {}, error = "", extraContent = "")
         <section class="formGrid">
           <label>Nombre del proyecto<input name="title" value="${project.title || ""}" required /></label>
           <label>Slug publico<input name="slug" value="${project.slug || ""}" placeholder="se genera si queda vacio" /></label>
+          <label>Subdominio microsite<input name="microsite_slug" value="${project.microsite_slug || ""}" placeholder="ej: cacaobayaguana" /></label>
           <label>Categoria<select name="category">${projectCategories.map(([value, label]) => `<option value="${value}" ${project.category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
           <label>Ubicacion<input name="location" value="${project.location || ""}" required /></label>
           <label>Tipo<select name="type">${projectTypes.map((type) => `<option ${project.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></label>
@@ -187,6 +198,7 @@ function projectForm(project = {}, offering = {}, error = "", extraContent = "")
         </section>
         <label>Estructura legal<textarea name="legal_structure" rows="3" required>${project.legal_structure || "Fideicomiso inmobiliario con derechos economicos tokenizados"}</textarea></label>
         <label>Descripcion comercial<textarea name="description" rows="5" required>${project.description || ""}</textarea></label>
+        ${micrositeUrl ? `<div class="success">Microsite: <a href="${micrositeUrl}" target="_blank" rel="noopener">${micrositeUrl}</a></div>` : ""}
         <label>Documentos base, uno por linea<textarea name="documents" rows="5">${project.documents || "Titulo y certificacion registral\nTasacion independiente\nModelo financiero\nContrato de oferta\nInforme KYC/KYB del emisor"}</textarea></label>
         <button class="button primary" type="submit">${isEdit ? "Guardar proyecto" : "Crear proyecto"}</button>
       </form>
@@ -198,6 +210,7 @@ function projectForm(project = {}, offering = {}, error = "", extraContent = "")
 function readProjectPayload(body) {
   const title = String(body.title || "").trim();
   const slug = slugify(body.slug || title);
+  const micrositeSlug = micrositeSlugify(body.microsite_slug || slug);
   const targetRaise = Number(body.target_raise || 0);
   const tokenSupply = Number(body.token_supply || 0);
   const tokenPrice = Number(body.token_price || 0);
@@ -206,6 +219,7 @@ function readProjectPayload(body) {
   }
   return {
     slug,
+    microsite_slug: micrositeSlug,
     category: String(body.category || "real-estate"),
     title,
     location: String(body.location || "").trim(),
@@ -236,6 +250,7 @@ function tokenSymbolFromName(name) {
 
 function createProjectFromIssuerApplication(application) {
   const slug = slugify(application.project_name);
+  const micrositeSlug = micrositeSlugify(slug);
   const existing = store.get("SELECT * FROM projects WHERE slug = ?", [slug]);
   if (existing) return existing;
   const targetRaise = Math.max(1000, Number(application.target_raise || 0));
@@ -244,10 +259,11 @@ function createProjectFromIssuerApplication(application) {
   const now = new Date().toISOString();
   store.run(`
     INSERT INTO projects
-    (slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (slug, microsite_slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     slug,
+    micrositeSlug,
     application.category || "health-wellness",
     application.project_name,
     application.location,
@@ -514,6 +530,7 @@ function registerAdminRoutes(app) {
       const uploadedImage = saveProjectImage(form.files.project_image, payload.slug);
       if (uploadedImage) payload.image_url = uploadedImage;
       if (store.get("SELECT id FROM projects WHERE slug = ?", [payload.slug])) throw new Error("Ya existe un proyecto con ese slug.");
+      if (store.get("SELECT id FROM projects WHERE microsite_slug = ?", [payload.microsite_slug])) throw new Error("Ya existe un proyecto con ese subdominio microsite.");
     } catch (error) {
       const body = form ? form.fields : {};
       return res.status(400).send(layout("Nuevo proyecto", projectForm(body, body, error.message), req));
@@ -521,10 +538,11 @@ function registerAdminRoutes(app) {
     const now = new Date().toISOString();
     store.run(`
       INSERT INTO projects
-      (slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (slug, microsite_slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       payload.slug,
+      payload.microsite_slug,
       payload.category,
       payload.title,
       payload.location,
@@ -594,6 +612,8 @@ function registerAdminRoutes(app) {
       if (uploadedImage) payload.image_url = uploadedImage;
       const duplicate = store.get("SELECT id FROM projects WHERE slug = ? AND id != ?", [payload.slug, project.id]);
       if (duplicate) throw new Error("Ya existe otro proyecto con ese slug.");
+      const duplicateMicrosite = store.get("SELECT id FROM projects WHERE microsite_slug = ? AND id != ?", [payload.microsite_slug, project.id]);
+      if (duplicateMicrosite) throw new Error("Ya existe otro proyecto con ese subdominio microsite.");
       if (payload.status === "open" && project.status !== "open") {
         const missing = incompleteChecklistItems(project.id);
         if (missing.length) throw new Error(`Antes de abrir el proyecto, completa el checklist profesional. Pendientes: ${missing.map((item) => item.label).join(", ")}.`);
@@ -604,12 +624,13 @@ function registerAdminRoutes(app) {
     }
     store.run(`
       UPDATE projects
-      SET slug = ?, category = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
+      SET slug = ?, microsite_slug = ?, category = ?, title = ?, location = ?, type = ?, legal_structure = ?, target_raise = ?, min_investment = ?,
           token_symbol = ?, token_supply = ?, token_price = ?, expected_yield = ?, status = ?, image_url = ?,
           description = ?, risk_level = ?
       WHERE id = ?
     `, [
       payload.slug,
+      payload.microsite_slug,
       payload.category,
       payload.title,
       payload.location,

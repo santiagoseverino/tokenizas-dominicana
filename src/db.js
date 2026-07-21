@@ -45,6 +45,7 @@ function migrate() {
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT NOT NULL UNIQUE,
+      microsite_slug TEXT,
       title TEXT NOT NULL,
       category TEXT NOT NULL DEFAULT 'real-estate',
       location TEXT NOT NULL,
@@ -388,6 +389,11 @@ function migrate() {
     db.run("UPDATE projects SET category = 'music' WHERE slug = 'lionel-the-star-entertainment'");
     db.run("UPDATE projects SET category = 'tourism' WHERE slug IN ('samana-eco-hotel', 'punta-cana-villas')");
     db.run("UPDATE projects SET category = 'art' WHERE lower(type) LIKE '%arte%' OR lower(title) LIKE '%arte%'");
+  }
+  if (!projectColumns.includes("microsite_slug")) {
+    db.run("ALTER TABLE projects ADD COLUMN microsite_slug TEXT");
+    db.run("UPDATE projects SET microsite_slug = 'cacaobayaguana' WHERE slug = 'finca-cacao-bayaguana'");
+    db.run("UPDATE projects SET microsite_slug = replace(replace(slug, '-', ''), '_', '') WHERE microsite_slug IS NULL OR microsite_slug = ''");
   }
   if (!leadColumns.includes("status")) {
     db.run("ALTER TABLE leads ADD COLUMN status TEXT NOT NULL DEFAULT 'new'");

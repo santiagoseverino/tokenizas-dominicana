@@ -45,10 +45,54 @@ function findProjectBySubdomain(subdomain) {
   return store.all("SELECT * FROM projects ORDER BY id").find((project) => projectAliases(project).has(alias));
 }
 
+const cacaoSlides = [
+  "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=1600&q=72",
+  "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&w=1600&q=72",
+  "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1600&q=72"
+];
+
+function cacaoLogo() {
+  return `<a class="cacaoLogo" href="#inicio" aria-label="CACAO Bayaguana">
+    <span class="cacaoMark">CB</span>
+    <span><strong>CACAO</strong><em>Bayaguana Token</em></span>
+  </a>`;
+}
+
+function cacaoNav(tokenizasUrl, project) {
+  return `<header class="cacaoNav">
+    ${cacaoLogo()}
+    <nav>
+      <a href="#token">Token</a>
+      <a href="#fondos">Fondos</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#readiness">Readiness</a>
+      <a href="${tokenizasUrl}/projects/${project.slug}#invertir">Invertir</a>
+    </nav>
+  </header>`;
+}
+
+function cacaoHero(project, tokenizasUrl) {
+  return `<section class="cacaoHero" id="inicio">
+    <div class="cacaoSlider" aria-hidden="true">
+      ${cacaoSlides.map((src, index) => `<img src="${src}" alt="" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />`).join("")}
+    </div>
+    ${cacaoNav(tokenizasUrl, project)}
+    <div class="cacaoHeroContent">
+      <p class="eyebrow">Agricultural tokenization / Bayaguana</p>
+      <h1>CACAO Bayaguana</h1>
+      <p class="lead">A tokenized cacao farm project designed to test fractional investment, Solana devnet issuance, transparent readiness tracking, and operating capital for agricultural production.</p>
+      <div class="actions">
+        <a class="button primary" href="${tokenizasUrl}/projects/${project.slug}#invertir">Buy CACAO tokens</a>
+        <a class="button" href="#token">Explore token</a>
+      </div>
+    </div>
+  </section>`;
+}
+
 function cacaoMicrositeSections(project, offering, mint, raisedPct, tokenizasUrl) {
   const hardCap = offering.hard_cap || project.target_raise;
   return `
-    <section class="farmTokenBand">
+    <section class="farmTokenBand" id="token">
       <div>
         <p class="eyebrow">CACAO Token</p>
         <h2>Tokenizacion agricola para una finca de cacao en Bayaguana.</h2>
@@ -78,7 +122,7 @@ function cacaoMicrositeSections(project, offering, mint, raisedPct, tokenizasUrl
         <p>Readiness, documentos, mint, pagos y emision de tokens se verifican desde Tokenizas Dominicana.</p>
       </article>
     </section>
-    <section class="microSection farmUseFunds">
+    <section class="microSection farmUseFunds" id="fondos">
       <div>
         <p class="eyebrow">Uso de fondos</p>
         <h2>Meta inicial: ${money.format(project.target_raise)}</h2>
@@ -99,7 +143,7 @@ function cacaoMicrositeSections(project, offering, mint, raisedPct, tokenizasUrl
         <a class="button primary" href="${tokenizasUrl}/projects/${project.slug}#invertir">Comprar CACAO</a>
       </aside>
     </section>
-    <section class="farmRoadmap">
+    <section class="farmRoadmap" id="roadmap">
       <p class="eyebrow">Roadmap</p>
       <h2>Plan de ejecucion</h2>
       <div>
@@ -131,7 +175,7 @@ function micrositeHtml(req, project) {
     </head>
     <body>
       <main class="microSite">
-        <section class="microHero">
+        ${project.slug === "finca-cacao-bayaguana" ? cacaoHero(project, tokenizasUrl) : `<section class="microHero">
           <div class="microHeroMedia"><img src="${project.image_url}" alt="${project.title}" /></div>
           <div class="microHeroContent">
             <a class="microBrand" href="${tokenizasUrl}"><img src="/tokenizas-dominicana-logo.png" alt="Tokenizas Dominicana" /></a>
@@ -143,7 +187,7 @@ function micrositeHtml(req, project) {
               <a class="button" href="${tokenizasUrl}/contact">Solicitar informacion</a>
             </div>
           </div>
-        </section>
+        </section>`}
         <section class="microStats">
           <article><span>Meta</span><strong>${money.format(project.target_raise)}</strong></article>
           <article><span>Token</span><strong>${project.token_symbol}</strong></article>
@@ -168,7 +212,7 @@ function micrositeHtml(req, project) {
             ${mint ? `<div class="fact"><span>Mint</span><strong class="monoBreak">${mint.mint_address}</strong></div>` : ""}
           </aside>
         </section>
-        <section class="microSection">
+        <section class="microSection" id="readiness">
           <div class="panel readinessPanel">
             <div class="checklistHeader">
               <div><p class="eyebrow">Readiness</p><h3>Checklist profesional</h3><p class="muted">Resumen publico del expediente del proyecto.</p></div>

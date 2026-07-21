@@ -29,6 +29,37 @@ function ensureProjectChecklist(projectId) {
       VALUES (?, ?, ?, ?, 'pending', '', 1, ?)
     `, [projectId, category, itemKey, label, now]);
   });
+  syncProjectChecklist(projectId);
+}
+
+function markDone(projectId, itemKey, note) {
+  const item = store.get("SELECT * FROM project_checklist WHERE project_id = ? AND item_key = ?", [projectId, itemKey]);
+  if (!item || item.status === "done" || item.status === "blocked") return;
+  store.run(`
+    UPDATE project_checklist
+    SET status = 'done', notes = ?, updated_at = ?
+    WHERE id = ?
+  `, [note, new Date().toISOString(), item.id]);
+}
+
+function syncProjectChecklist(projectId) {
+  const project = store.get("SELECT * FROM projects WHERE id = ?", [projectId]);
+  if (!project) return;
+  const offering = store.get("SELECT * FROM offerings WHERE project_id = ?", [projectId]);
+  const mint = store.get("SELECT * FROM token_mints WHERE project_id = ?", [projectId]);
+  const docs = store.all("SELECT * FROM documents WHERE project_id = ?", [projectId]);
+  const docText = docs.map((doc) => `${doc.title} ${doc.category} ${doc.status}`).join(" ").toLowerCase();
+
+  if (project.legal_structure) markDone(projectId, "legal_owner", "Estructura legal registrada en el proyecto.");
+  if (project.target_raise && offering) markDone(projectId, "budget", "Meta y ronda de oferta configuradas.");
+  if (project.expected_yield && offering) markDone(projectId, "financial_model", "Rendimiento esperado y oferta configurados.");
+  if (project.token_symbol && project.token_supply && project.token_price) markDone(projectId, "tokenomics", "Simbolo, supply y precio del token configurados.");
+  if (mint && mint.mint_address && !String(mint.mint_address).startsWith("Mint")) markDone(projectId, "solana_mint", `Mint configurado: ${mint.mint_address}`);
+  if (project.title && project.description && project.image_url) markDone(projectId, "public_content", "Contenido publico e imagen del proyecto configurados.");
+  if (["open", "funded"].includes(project.status)) markDone(projectId, "final_review", "Proyecto marcado como abierto o financiado.");
+  if (/kyb|kyc|emisor|dueno|owner/.test(docText)) markDone(projectId, "owner_kyb", "Documento KYB/KYC registrado.");
+  if (/opinion legal|legal/.test(docText)) markDone(projectId, "legal_opinion", "Documento legal registrado.");
+  if (/permiso|licencia|autorizacion|no objecion|authority|permit/.test(docText)) markDone(projectId, "permits", "Documento de permisos o autorizaciones registrado.");
 }
 
 function getProjectChecklist(projectId, ownerOnly = false) {

@@ -263,6 +263,7 @@ function migrate() {
       status TEXT NOT NULL DEFAULT 'submitted',
       internal_notes TEXT,
       project_id INTEGER,
+      status_token TEXT,
       owner_notified_at TEXT,
       created_at TEXT NOT NULL,
       reviewed_at TEXT
@@ -279,6 +280,17 @@ function migrate() {
       notes TEXT,
       uploaded_at TEXT NOT NULL,
       reviewed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS issuer_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      application_id INTEGER NOT NULL,
+      sender TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      subject TEXT,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'recorded',
+      created_at TEXT NOT NULL
     );
   `);
 
@@ -350,6 +362,9 @@ function migrate() {
   }
   if (!issuerColumns.includes("project_id")) {
     db.run("ALTER TABLE issuer_applications ADD COLUMN project_id INTEGER");
+  }
+  if (!issuerColumns.includes("status_token")) {
+    db.run("ALTER TABLE issuer_applications ADD COLUMN status_token TEXT");
   }
   if (!issuerColumns.includes("owner_notified_at")) {
     db.run("ALTER TABLE issuer_applications ADD COLUMN owner_notified_at TEXT");

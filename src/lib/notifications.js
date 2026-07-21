@@ -96,7 +96,7 @@ function passwordResetEmailText({ name, resetUrl }) {
   ].join("\n");
 }
 
-function projectApprovedEmailHtml({ application, projectUrl }) {
+function projectApprovedEmailHtml({ application, projectUrl, statusUrl }) {
   return `
     <div style="font-family:Arial,sans-serif;color:#082f49;line-height:1.5">
       <h2>Tu proyecto fue aprobado y creado en Tokenizas Dominicana</h2>
@@ -108,12 +108,13 @@ function projectApprovedEmailHtml({ application, projectUrl }) {
         <tr><td><strong>Meta</strong></td><td>US$ ${Number(application.target_raise || 0).toLocaleString("en-US")}</td></tr>
       </table>
       <p style="margin-top:18px"><a href="${projectUrl}" style="display:inline-block;background:#06b6d4;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Ver proyecto</a></p>
+      <p>Tambien puedes dar seguimiento a tu solicitud aqui: <a href="${statusUrl}">${statusUrl}</a></p>
       <p>Nuestro equipo continuara con la revision operativa, documentos, tokenomics, KYC/KYB y preparacion de la oferta.</p>
     </div>
   `;
 }
 
-function projectApprovedEmailText({ application, projectUrl }) {
+function projectApprovedEmailText({ application, projectUrl, statusUrl }) {
   return [
     "Tu proyecto fue aprobado y creado en Tokenizas Dominicana",
     "",
@@ -125,8 +126,33 @@ function projectApprovedEmailText({ application, projectUrl }) {
     `Meta: US$ ${Number(application.target_raise || 0).toLocaleString("en-US")}`,
     "",
     `Ver proyecto: ${projectUrl}`,
+    `Estado de solicitud: ${statusUrl}`,
     "",
     "Nuestro equipo continuara con la revision operativa, documentos, tokenomics, KYC/KYB y preparacion de la oferta."
+  ].join("\n");
+}
+
+function issuerMessageEmailHtml({ application, subject, message, statusUrl }) {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#082f49;line-height:1.5">
+      <h2>${subject}</h2>
+      <p>Hola ${application.owner_name || "equipo"},</p>
+      <p>${String(message || "").replace(/\n/g, "<br>")}</p>
+      <p style="margin-top:18px">Puedes revisar el estado y subir documentos adicionales aqui:</p>
+      <p><a href="${statusUrl}" style="display:inline-block;background:#06b6d4;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Ver estado de solicitud</a></p>
+    </div>
+  `;
+}
+
+function issuerMessageEmailText({ application, subject, message, statusUrl }) {
+  return [
+    subject,
+    "",
+    `Hola ${application.owner_name || "equipo"},`,
+    "",
+    message,
+    "",
+    `Estado de solicitud: ${statusUrl}`
   ].join("\n");
 }
 
@@ -191,7 +217,7 @@ async function sendPasswordReset(user, resetUrl) {
   return { sent: true, messageId: info.messageId };
 }
 
-async function notifyProjectOwnerApproved(application, projectUrl) {
+async function notifyProjectOwnerApproved(application, projectUrl, statusUrl = projectUrl) {
   if (!smtpConfigured()) return { sent: false, reason: "smtp_not_configured" };
   const transporter = createTransporter();
   const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
@@ -200,10 +226,25 @@ async function notifyProjectOwnerApproved(application, projectUrl) {
     to: application.email,
     replyTo: process.env.ADMIN_NOTIFY_EMAIL,
     subject: `Proyecto aprobado: ${application.project_name}`,
-    text: projectApprovedEmailText({ application, projectUrl }),
-    html: projectApprovedEmailHtml({ application, projectUrl })
+    text: projectApprovedEmailText({ application, projectUrl, statusUrl }),
+    html: projectApprovedEmailHtml({ application, projectUrl, statusUrl })
   });
   return { sent: true, messageId: info.messageId };
 }
 
-module.exports = { notifyLead, notifyProjectOwnerApproved, sendPasswordReset, smtpConfigured };
+async function sendIssuerMessage(application, { subject, message, statusUrl }) {
+  if (!smtpConfigured()) return { sent: false, reason: "smtp_not_configured" };
+  const transporter = createTransporter();
+  const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
+  const info = await transporter.sendMail({
+    from,
+    to: application.email,
+    replyTo: process.env.ADMIN_NOTIFY_EMAIL,
+    subject,
+    text: issuerMessageEmailText({ application, subject, message, statusUrl }),
+    html: issuerMessageEmailHtml({ application, subject, message, statusUrl })
+  });
+  return { sent: true, messageId: info.messageId };
+}
+
+module.exports = { notifyLead, notifyProjectOwnerApproved, sendIssuerMessage, sendPasswordReset, smtpConfigured };

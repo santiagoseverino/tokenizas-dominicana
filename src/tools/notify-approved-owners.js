@@ -1,6 +1,7 @@
 const config = require("../config");
 const store = require("../db");
 const { notifyProjectOwnerApproved } = require("../lib/notifications");
+const crypto = require("crypto");
 
 function slugify(value) {
   return String(value || "")
@@ -35,6 +36,13 @@ function findProject(application, projects) {
   });
 }
 
+function ensureStatusToken(application) {
+  if (application.status_token) return application.status_token;
+  const token = crypto.randomBytes(24).toString("hex");
+  store.run("UPDATE issuer_applications SET status_token = ? WHERE id = ?", [token, application.id]);
+  return token;
+}
+
 (async () => {
   await store.initDb();
   const force = process.env.OWNER_NOTIFY_FORCE === "1";
@@ -53,7 +61,8 @@ function findProject(application, projects) {
       continue;
     }
     const projectUrl = `${config.siteUrl}/projects/${project.slug}`;
-    const result = await notifyProjectOwnerApproved(application, projectUrl);
+    const statusUrl = `${config.siteUrl}/issuer/status/${ensureStatusToken(application)}`;
+    const result = await notifyProjectOwnerApproved(application, projectUrl, statusUrl);
     if (result.sent) {
       store.run("UPDATE issuer_applications SET owner_notified_at = ?, project_id = ? WHERE id = ?", [new Date().toISOString(), project.id, application.id]);
       store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('System', 'sent_project_owner_approval_email', ?, ?, ?)", [application.email, project.slug, new Date().toISOString()]);

@@ -10,7 +10,7 @@ const { layout, money, number, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
 const { seedCacaoMarketplaceDemo } = require("../lib/marketplace-demo");
-const { notifyProjectOwnerApproved } = require("../lib/notifications");
+const { notifyProjectOwnerApproved, sendIssuerMessage } = require("../lib/notifications");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -250,6 +250,24 @@ function createProjectFromIssuerApplication(application) {
   store.run("UPDATE issuer_applications SET status = 'approved', project_id = ?, reviewed_at = ? WHERE id = ?", [project.id, now, application.id]);
   store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'created_project_from_issuer', ?, ?, ?)", [application.project_name, `project:${project.id}`, now]);
   return project;
+}
+
+function ensureIssuerStatusToken(application) {
+  if (application.status_token) return application.status_token;
+  const crypto = require("crypto");
+  const token = crypto.randomBytes(24).toString("hex");
+  store.run("UPDATE issuer_applications SET status_token = ? WHERE id = ?", [token, application.id]);
+  return token;
+}
+
+function issuerStatusUrl(req, application) {
+  const token = ensureIssuerStatusToken(application);
+  return `${req.protocol}://${req.get("host")}/issuer/status/${token}`;
+}
+
+function issuerWhatsappUrl(application, message) {
+  const phone = String(application.whatsapp || "").replace(/\D/g, "");
+  return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : "";
 }
 
 function registerAdminRoutes(app) {
@@ -597,11 +615,14 @@ function registerAdminRoutes(app) {
     const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
     if (!application) return res.status(404).send("Solicitud no encontrada");
     const docs = store.all("SELECT * FROM issuer_documents WHERE application_id = ? ORDER BY uploaded_at DESC", [application.id]);
+    const messages = store.all("SELECT * FROM issuer_messages WHERE application_id = ? ORDER BY id DESC LIMIT 20", [application.id]);
+    const portalUrl = issuerStatusUrl(req, application);
+    const whatsappUrl = issuerWhatsappUrl(application, `Hola ${application.owner_name}, revisa el estado de tu solicitud ${application.project_name}: ${portalUrl}`);
     res.send(layout(application.project_name, `
       <main class="page adminPage">
         <div class="adminHero">
           <div><p class="eyebrow">Due diligence proyecto</p><h1>${application.project_name}</h1><p class="muted">${application.company_name} - ${application.owner_name} - ${statusLabel(application.status)}</p></div>
-          <div class="adminActions"><a class="button small" href="/admin/issuers">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+          <div class="adminActions"><a class="button primary small" href="${portalUrl}" target="_blank" rel="noopener">Portal dueno</a>${whatsappUrl ? `<a class="button small" href="${whatsappUrl}" target="_blank" rel="noopener">WhatsApp</a>` : ""}<a class="button small" href="/admin/issuers">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
         </div>
         <section class="split">
           <form class="panel contactForm adminPanel" method="post" action="/admin/issuers/${application.id}">
@@ -640,6 +661,19 @@ function registerAdminRoutes(app) {
             </table>
           </div>
         </section>
+        <section class="split">
+          <form class="panel contactForm adminPanel" method="post" action="/admin/issuers/${application.id}/message">
+            <h3>Enviar mensaje al dueno</h3>
+            <label>Canal<select name="channel"><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="both">Email + WhatsApp</option></select></label>
+            <label>Asunto<input name="subject" value="Actualizacion de tu solicitud en Tokenizas Dominicana" required /></label>
+            <label>Mensaje<textarea name="message" rows="5" required>Hola ${application.owner_name}, tu solicitud ${application.project_name} fue revisada. Puedes ver el estado y subir documentos adicionales aqui: ${portalUrl}</textarea></label>
+            <button class="button primary" type="submit">Guardar / enviar mensaje</button>
+          </form>
+          <div class="panel adminPanel">
+            <h3>Historial de mensajes</h3>
+            ${messages.map((item) => `<div class="event"><b>${item.subject || item.channel}</b><span>${item.sender} - ${item.channel} - ${item.status} - ${item.created_at}</span><p>${item.message}</p></div>`).join("") || `<p class="muted">Sin mensajes todavia.</p>`}
+          </div>
+        </section>
       </main>
     `, req));
   });
@@ -666,7 +700,7 @@ function registerAdminRoutes(app) {
     try {
       const project = createProjectFromIssuerApplication(application);
       const projectUrl = `${req.protocol}://${req.get("host")}/projects/${project.slug}`;
-      const result = await notifyProjectOwnerApproved(application, projectUrl);
+      const result = await notifyProjectOwnerApproved(application, projectUrl, issuerStatusUrl(req, application));
       if (result.sent) {
         store.run("UPDATE issuer_applications SET owner_notified_at = ? WHERE id = ?", [new Date().toISOString(), application.id]);
         store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'sent_project_owner_approval_email', ?, ?, ?)", [application.email, project.slug, new Date().toISOString()]);
@@ -677,6 +711,33 @@ function registerAdminRoutes(app) {
     } catch (error) {
       res.status(400).send(layout("Crear proyecto", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/issuers/${application.id}">Volver</a></p></div></main>`, req));
     }
+  });
+
+  app.post("/admin/issuers/:id/message", requireAdmin, async (req, res) => {
+    const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
+    if (!application) return res.status(404).send("Solicitud no encontrada");
+    const channel = ["email", "whatsapp", "both"].includes(req.body.channel) ? req.body.channel : "email";
+    const subject = String(req.body.subject || "Actualizacion de solicitud").trim();
+    const message = String(req.body.message || "").trim();
+    if (!message) return res.redirect(`/admin/issuers/${application.id}`);
+    let status = "recorded";
+    if (channel === "email" || channel === "both") {
+      const result = await sendIssuerMessage(application, { subject, message, statusUrl: issuerStatusUrl(req, application) });
+      status = result.sent ? "sent_email" : `email_${result.reason || "not_sent"}`;
+    }
+    store.run("INSERT INTO issuer_messages (application_id, sender, channel, subject, message, status, created_at) VALUES (?, 'Admin', ?, ?, ?, ?, ?)", [
+      application.id,
+      channel,
+      subject,
+      message,
+      status,
+      new Date().toISOString()
+    ]);
+    if (channel === "whatsapp" || channel === "both") {
+      const url = issuerWhatsappUrl(application, `${message}\n\n${issuerStatusUrl(req, application)}`);
+      if (url) return res.redirect(url);
+    }
+    res.redirect(`/admin/issuers/${application.id}`);
   });
 
   app.get("/admin/issuers/documents/:id/download", requireAdmin, (req, res) => {

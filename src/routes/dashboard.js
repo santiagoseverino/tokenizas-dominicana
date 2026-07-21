@@ -81,6 +81,14 @@ function registerDashboardRoutes(app) {
       WHERE ml.seller_user_id = ? AND ml.status = 'active'
       ORDER BY ml.created_at DESC
     `, [user.id]).map((item) => ({ ...item, title: item.title })), req).map((item) => ({ ...item, project_title: item.title }));
+    const pendingSales = localizeProjects(store.all(`
+      SELECT mt.*, p.slug, p.title, u.name buyer_name
+      FROM marketplace_trades mt
+      JOIN projects p ON p.id = mt.project_id
+      JOIN users u ON u.id = mt.buyer_user_id
+      WHERE mt.seller_user_id = ? AND mt.status = 'pending_onchain_transfer'
+      ORDER BY mt.created_at DESC
+    `, [user.id]).map((item) => ({ ...item, title: item.title })), req).map((item) => ({ ...item, project_title: item.title }));
     const events = store.all(`
       SELECT te.*
       FROM token_events te
@@ -104,7 +112,9 @@ function registerDashboardRoutes(app) {
         ${req.query.payment === "failed" ? `<div class="alert">No se pudo confirmar el pago. Revisa la firma y que el monto haya llegado a la treasury.</div>` : ""}
         ${req.query.marketplace === "listed" ? `<div class="success">Tokens listados en el marketplace.</div>` : ""}
         ${req.query.marketplace === "canceled" ? `<div class="success">Listado cancelado.</div>` : ""}
-        ${req.query.marketplace === "bought" ? `<div class="success">Compra de marketplace completada en el balance interno.</div>` : ""}
+        ${req.query.marketplace === "bought" ? `<div class="success">Compra registrada. El vendedor debe completar la transferencia SPL desde Phantom.</div>` : ""}
+        ${req.query.marketplace === "transfer_verified" ? `<div class="success">Transferencia SPL verificada. El balance fue actualizado.</div>` : ""}
+        ${req.query.marketplace === "transfer_failed" ? `<div class="alert">No se pudo verificar la transferencia SPL. Revisa firma, mint, wallet destino y cantidad.</div>` : ""}
         ${req.query.marketplace === "invalid" ? `<div class="alert">No se pudo crear el listado. Revisa cantidad disponible y precio.</div>` : ""}
         <section class="metrics compact">
           <article><strong>${money.format(total)}</strong><span>${d.investedReserved}</span></article>
@@ -130,6 +140,10 @@ function registerDashboardRoutes(app) {
         <section class="panel">
           <h3>Mis listados en marketplace</h3>
           ${marketplaceListings.map((item) => `<div class="event"><b>${number.format(item.quantity)} ${item.token_symbol} - ${item.project_title}</b><span>${money.format(item.price_per_token)} por token - creado ${item.created_at}</span><p>Total listado: ${money.format(Number(item.quantity) * Number(item.price_per_token))}</p><form method="post" action="/marketplace/listings/${item.id}/cancel"><button class="button danger small" type="submit">Cancelar listado</button></form></div>`).join("") || `<p class="muted">No tienes tokens listados en venta.</p>`}
+        </section>
+        <section class="panel">
+          <h3>Ventas pendientes de transferencia SPL</h3>
+          ${pendingSales.map((trade) => `<div class="event"><b>Venta #${trade.id} - ${number.format(trade.quantity)} ${trade.token_symbol} - ${trade.project_title}</b><span>Comprador: ${trade.buyer_name} - Total: ${money.format(trade.total_amount)}</span><p>Transfiere desde Phantom ${number.format(trade.quantity)} ${trade.token_symbol} al comprador y pega la firma.</p><span>Mint: ${trade.mint_address}</span><span>Wallet comprador: ${trade.buyer_wallet}</span><form class="inlineForm" method="post" action="/marketplace/trades/${trade.id}/verify-transfer"><label>Firma SPL<input name="signature" placeholder="Firma de Solana" value="${trade.transfer_signature || ""}" required /></label><button class="button primary small" type="submit">Verificar transferencia</button></form></div>`).join("") || `<p class="muted">No tienes ventas pendientes de transferencia.</p>`}
         </section>
       </main>
     `, req));

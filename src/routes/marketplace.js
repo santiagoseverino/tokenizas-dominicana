@@ -1,6 +1,7 @@
 const store = require("../db");
 const { currentInvestor } = require("../middleware/auth");
 const { localizeProjects } = require("../lib/project-content");
+const { verifySplTokenTransfer } = require("../lib/solana");
 const { layout, money, number, statusLabel } = require("../lib/ui");
 
 function availableBalance(balance) {
@@ -102,25 +103,12 @@ function registerMarketplaceRoutes(app) {
     const sellerBalance = store.get("SELECT * FROM token_balances WHERE project_id = ? AND user_id = ?", [listing.project_id, listing.seller_user_id]);
     if (!sellerBalance || Number(sellerBalance.balance) < Number(listing.quantity)) return res.redirect("/marketplace?trade=unavailable");
     const buyerWallet = store.get("SELECT wallet FROM users WHERE id = ?", [buyer.id]);
+    const sellerWallet = store.get("SELECT wallet FROM users WHERE id = ?", [listing.seller_user_id]);
+    const mint = store.get("SELECT mint_address FROM token_mints WHERE project_id = ?", [listing.project_id]);
     const now = new Date().toISOString();
     const total = Number(listing.quantity) * Number(listing.price_per_token);
-    store.run("UPDATE token_balances SET balance = balance - ?, locked_balance = MAX(0, locked_balance - ?), updated_at = ? WHERE id = ?", [listing.quantity, listing.quantity, now, sellerBalance.id]);
-    const existingBuyerBalance = store.get("SELECT * FROM token_balances WHERE project_id = ? AND user_id = ?", [listing.project_id, buyer.id]);
-    if (existingBuyerBalance) {
-      store.run("UPDATE token_balances SET balance = balance + ?, locked_balance = locked_balance + ?, updated_at = ? WHERE id = ?", [listing.quantity, listing.quantity, now, existingBuyerBalance.id]);
-    } else {
-      store.run("INSERT INTO token_balances (project_id, user_id, wallet_address, token_symbol, balance, locked_balance, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
-        listing.project_id,
-        buyer.id,
-        buyerWallet.wallet || "wallet pendiente",
-        listing.token_symbol,
-        listing.quantity,
-        listing.quantity,
-        now
-      ]);
-    }
-    store.run("UPDATE marketplace_listings SET status = 'sold', sold_at = ? WHERE id = ?", [now, listing.id]);
-    store.run("INSERT INTO marketplace_trades (listing_id, project_id, seller_user_id, buyer_user_id, token_symbol, quantity, price_per_token, total_amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'settled_internal', ?)", [
+    store.run("UPDATE marketplace_listings SET status = 'pending_transfer', sold_at = ? WHERE id = ?", [now, listing.id]);
+    store.run("INSERT INTO marketplace_trades (listing_id, project_id, seller_user_id, buyer_user_id, token_symbol, quantity, price_per_token, total_amount, status, seller_wallet, buyer_wallet, mint_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_onchain_transfer', ?, ?, ?, ?)", [
       listing.id,
       listing.project_id,
       listing.seller_user_id,
@@ -129,6 +117,9 @@ function registerMarketplaceRoutes(app) {
       listing.quantity,
       listing.price_per_token,
       total,
+      sellerWallet && sellerWallet.wallet ? sellerWallet.wallet : sellerBalance.wallet_address,
+      buyerWallet && buyerWallet.wallet ? buyerWallet.wallet : "wallet pendiente",
+      mint && mint.mint_address ? mint.mint_address : "",
       now
     ]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'marketplace_bought', ?, ?, ?)", [
@@ -138,6 +129,39 @@ function registerMarketplaceRoutes(app) {
       now
     ]);
     res.redirect("/dashboard?marketplace=bought");
+  });
+
+  app.post("/marketplace/trades/:id/verify-transfer", async (req, res) => {
+    const user = currentInvestor(req);
+    if (!user) return res.redirect("/investor/login");
+    const trade = store.get("SELECT * FROM marketplace_trades WHERE id = ? AND seller_user_id = ? AND status = 'pending_onchain_transfer'", [req.params.id, user.id]);
+    if (!trade) return res.redirect("/dashboard");
+    const signature = String(req.body.signature || "").trim();
+    try {
+      await verifySplTokenTransfer({
+        signature,
+        mintAddress: trade.mint_address,
+        destinationOwner: trade.buyer_wallet,
+        amount: trade.quantity
+      });
+      const now = new Date().toISOString();
+      const sellerBalance = store.get("SELECT * FROM token_balances WHERE project_id = ? AND user_id = ?", [trade.project_id, trade.seller_user_id]);
+      if (sellerBalance) {
+        store.run("UPDATE token_balances SET balance = MAX(0, balance - ?), locked_balance = MAX(0, locked_balance - ?), updated_at = ? WHERE id = ?", [trade.quantity, trade.quantity, now, sellerBalance.id]);
+      }
+      const buyerBalance = store.get("SELECT * FROM token_balances WHERE project_id = ? AND user_id = ?", [trade.project_id, trade.buyer_user_id]);
+      if (buyerBalance) {
+        store.run("UPDATE token_balances SET balance = balance + ?, locked_balance = locked_balance + ?, wallet_address = ?, updated_at = ? WHERE id = ?", [trade.quantity, trade.quantity, trade.buyer_wallet, now, buyerBalance.id]);
+      } else {
+        store.run("INSERT INTO token_balances (project_id, user_id, wallet_address, token_symbol, balance, locked_balance, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [trade.project_id, trade.buyer_user_id, trade.buyer_wallet, trade.token_symbol, trade.quantity, trade.quantity, now]);
+      }
+      store.run("UPDATE marketplace_trades SET status = 'settled_onchain', transfer_signature = ?, transfer_verified_at = ? WHERE id = ?", [signature, now, trade.id]);
+      store.run("UPDATE marketplace_listings SET status = 'sold' WHERE id = ?", [trade.listing_id]);
+      res.redirect("/dashboard?marketplace=transfer_verified");
+    } catch (error) {
+      store.run("UPDATE marketplace_trades SET transfer_signature = ? WHERE id = ?", [signature, trade.id]);
+      res.redirect("/dashboard?marketplace=transfer_failed");
+    }
   });
 }
 

@@ -184,6 +184,11 @@ function migrate() {
       price_per_token REAL NOT NULL,
       total_amount REAL NOT NULL,
       status TEXT NOT NULL DEFAULT 'settled_internal',
+      transfer_signature TEXT,
+      transfer_verified_at TEXT,
+      seller_wallet TEXT,
+      buyer_wallet TEXT,
+      mint_address TEXT,
       created_at TEXT NOT NULL
     );
 
@@ -279,6 +284,7 @@ function migrate() {
   const projectColumns = all("PRAGMA table_info(projects)").map((column) => column.name);
   const userColumns = all("PRAGMA table_info(users)").map((column) => column.name);
   const investmentColumns = all("PRAGMA table_info(investments)").map((column) => column.name);
+  const tradeColumns = all("PRAGMA table_info(marketplace_trades)").map((column) => column.name);
   if (!userColumns.includes("password_hash")) {
     db.run("ALTER TABLE users ADD COLUMN password_hash TEXT");
   }
@@ -323,6 +329,21 @@ function migrate() {
   }
   if (!investmentColumns.includes("issued_at")) {
     db.run("ALTER TABLE investments ADD COLUMN issued_at TEXT");
+  }
+  if (!tradeColumns.includes("transfer_signature")) {
+    db.run("ALTER TABLE marketplace_trades ADD COLUMN transfer_signature TEXT");
+  }
+  if (!tradeColumns.includes("transfer_verified_at")) {
+    db.run("ALTER TABLE marketplace_trades ADD COLUMN transfer_verified_at TEXT");
+  }
+  if (!tradeColumns.includes("seller_wallet")) {
+    db.run("ALTER TABLE marketplace_trades ADD COLUMN seller_wallet TEXT");
+  }
+  if (!tradeColumns.includes("buyer_wallet")) {
+    db.run("ALTER TABLE marketplace_trades ADD COLUMN buyer_wallet TEXT");
+  }
+  if (!tradeColumns.includes("mint_address")) {
+    db.run("ALTER TABLE marketplace_trades ADD COLUMN mint_address TEXT");
   }
   if (!projectColumns.includes("category")) {
     db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");

@@ -90,6 +90,32 @@ async function verifySolPayment({ signature, expectedSol, treasuryAddress }) {
   };
 }
 
+async function verifySplTokenTransfer({ signature, mintAddress, destinationOwner, amount }) {
+  const web3 = loadWeb3();
+  const connection = new web3.Connection(config.solanaRpcUrl, "confirmed");
+  if (!signature || !looksLikeSignature(signature)) throw new Error("Firma de Solana invalida.");
+  if (!isValidSolanaAddress(mintAddress)) throw new Error("Mint address invalido.");
+  if (!isValidSolanaAddress(destinationOwner)) throw new Error("Wallet destino invalida.");
+  const expected = Number(amount || 0);
+  if (!Number.isFinite(expected) || expected <= 0) throw new Error("Cantidad esperada invalida.");
+  const tx = await connection.getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  if (!tx || !tx.meta) throw new Error("No se encontro la transaccion SPL en Solana devnet.");
+  const preBalances = tx.meta.preTokenBalances || [];
+  const postBalances = tx.meta.postTokenBalances || [];
+  const received = postBalances
+    .filter((balance) => balance.mint === mintAddress && balance.owner === destinationOwner)
+    .reduce((sum, post) => {
+      const pre = preBalances.find((item) => item.accountIndex === post.accountIndex && item.mint === post.mint);
+      const preAmount = Number(pre && pre.uiTokenAmount ? pre.uiTokenAmount.uiAmount || 0 : 0);
+      const postAmount = Number(post.uiTokenAmount ? post.uiTokenAmount.uiAmount || 0 : 0);
+      return sum + Math.max(0, postAmount - preAmount);
+    }, 0);
+  if (received + 0.000001 < expected) {
+    throw new Error(`Transferencia insuficiente. Recibido ${received}, esperado ${expected}.`);
+  }
+  return { signature, mintAddress, destinationOwner, received };
+}
+
 function looksLikeSignature(signature) {
   return /^[1-9A-HJ-NP-Za-km-z]{64,100}$/.test(String(signature || ""));
 }
@@ -262,5 +288,6 @@ module.exports = {
   isValidSolanaAddress,
   isRealSolanaEnabled,
   mintTokensOnTestnet,
-  verifySolPayment
+  verifySolPayment,
+  verifySplTokenTransfer
 };

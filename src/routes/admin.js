@@ -186,6 +186,64 @@ function readProjectPayload(body) {
   };
 }
 
+function tokenSymbolFromName(name) {
+  const words = String(name || "TOK").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().match(/[A-Z0-9]+/g) || ["TOK"];
+  return words.map((word) => word[0]).join("").slice(0, 6) || "TOK";
+}
+
+function createProjectFromIssuerApplication(application) {
+  const slug = slugify(application.project_name);
+  const existing = store.get("SELECT * FROM projects WHERE slug = ?", [slug]);
+  if (existing) return existing;
+  const targetRaise = Math.max(1000, Number(application.target_raise || 0));
+  const tokenSupply = Math.max(1000, Math.round(targetRaise));
+  const tokenPrice = Number((targetRaise / tokenSupply).toFixed(2)) || 1;
+  const now = new Date().toISOString();
+  store.run(`
+    INSERT INTO projects
+    (slug, category, title, location, type, legal_structure, target_raise, min_investment, token_symbol, token_supply, token_price, expected_yield, status, image_url, description, risk_level, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    slug,
+    application.category || "health-wellness",
+    application.project_name,
+    application.location,
+    application.category === "health-wellness" ? "Health and wellness project" : "Proyecto tokenizable",
+    application.legal_structure,
+    targetRaise,
+    Math.min(100, targetRaise),
+    tokenSymbolFromName(application.project_name),
+    tokenSupply,
+    tokenPrice,
+    8,
+    "due_diligence",
+    "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80",
+    `${application.project_description}\n\nPresupuesto: ${application.budget_breakdown}\n\nPermisos: ${application.permits_summary}`,
+    "Medio",
+    now
+  ]);
+  const project = store.get("SELECT * FROM projects WHERE slug = ?", [slug]);
+  store.run("INSERT INTO offerings (project_id, round_name, soft_cap, hard_cap, raised, opens_at, closes_at, lockup_months) VALUES (?, 'Ronda Genesis', ?, ?, 0, ?, ?, 12)", [
+    project.id,
+    Math.round(targetRaise * 0.45),
+    targetRaise,
+    "2026-08-01",
+    "2026-10-30"
+  ]);
+  [
+    "Solicitud de tokenizacion del dueno",
+    "Presupuesto detallado",
+    "Resumen de permisos y autorizaciones",
+    "Estructura legal propuesta",
+    "Documentos KYB del emisor"
+  ].forEach((title) => {
+    store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, 'legal', 'review')", [project.id, title]);
+  });
+  store.run("UPDATE issuer_applications SET status = 'approved', reviewed_at = ? WHERE id = ?", [now, application.id]);
+  store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'created_project_from_issuer', ?, ?, ?)", [application.project_name, `project:${project.id}`, now]);
+  return project;
+}
+
 function registerAdminRoutes(app) {
   app.get("/admin", requireAdmin, (req, res) => {
     const t = tr(req);
@@ -550,9 +608,11 @@ function registerAdminRoutes(app) {
             <h3>Resumen financiero y legal</h3>
             <div class="fact"><span>Meta a recaudar</span><strong>${money.format(application.target_raise)}</strong></div>
             <div class="fact"><span>Presupuesto total</span><strong>${money.format(application.total_budget)}</strong></div>
+            <div class="fact"><span>Categoria</span><strong>${application.category}</strong></div>
             <div class="event"><b>Presupuesto</b><p>${application.budget_breakdown}</p></div>
             <div class="event"><b>Estructura legal</b><p>${application.legal_structure}</p></div>
             <div class="event"><b>Permisos</b><p>${application.permits_summary}</p></div>
+            <form method="post" action="/admin/issuers/${application.id}/create-project"><button class="button primary" type="submit">Crear proyecto desde solicitud</button></form>
           </div>
         </section>
         <section class="split">
@@ -590,6 +650,17 @@ function registerAdminRoutes(app) {
     ]);
     store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES (?, 'reviewed_issuer_application', ?, ?, ?)", ["Admin", application.project_name, `${status}: ${req.body.internal_notes || ""}`, new Date().toISOString()]);
     res.redirect(`/admin/issuers/${application.id}`);
+  });
+
+  app.post("/admin/issuers/:id/create-project", requireAdmin, (req, res) => {
+    const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
+    if (!application) return res.status(404).send("Solicitud no encontrada");
+    try {
+      const project = createProjectFromIssuerApplication(application);
+      res.redirect(`/admin/projects/${project.id}`);
+    } catch (error) {
+      res.status(400).send(layout("Crear proyecto", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/issuers/${application.id}">Volver</a></p></div></main>`, req));
+    }
   });
 
   app.get("/admin/issuers/documents/:id/download", requireAdmin, (req, res) => {

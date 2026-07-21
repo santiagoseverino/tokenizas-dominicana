@@ -43,6 +43,10 @@ function checklistProgress(items) {
   return { total, done, percent: total ? Math.round((done / total) * 100) : 0 };
 }
 
+function incompleteChecklistItems(projectId) {
+  return getProjectChecklist(projectId).filter((item) => item.status !== "done");
+}
+
 function updateProjectChecklistItem(id, values) {
   const allowed = new Set(["pending", "review", "done", "blocked"]);
   const status = allowed.has(values.status) ? values.status : "pending";
@@ -63,6 +67,7 @@ module.exports = {
   checklistProgress,
   ensureProjectChecklist,
   getProjectChecklist,
+  incompleteChecklistItems,
   statusLabels,
   updateProjectChecklistItem
 };

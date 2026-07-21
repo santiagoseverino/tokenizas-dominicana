@@ -11,7 +11,7 @@ const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokeniza
 const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
 const { seedCacaoMarketplaceDemo } = require("../lib/marketplace-demo");
 const { notifyProjectOwnerApproved, sendIssuerMessage } = require("../lib/notifications");
-const { checklistProgress, ensureProjectChecklist, getProjectChecklist, statusLabels: checklistStatusLabels, updateProjectChecklistItem } = require("../lib/project-checklist");
+const { checklistProgress, ensureProjectChecklist, getProjectChecklist, incompleteChecklistItems, statusLabels: checklistStatusLabels, updateProjectChecklistItem } = require("../lib/project-checklist");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -121,6 +121,7 @@ function renderMarketplaceTrade(item) {
 
 function renderProjectChecklistAdmin(project, checklist, progress) {
   const options = Object.entries(checklistStatusLabels).map(([value, label]) => ({ value, label }));
+  const incomplete = checklist.filter((item) => item.status !== "done");
   return `
     <section class="panel adminPanel readinessPanel">
       <div class="checklistHeader">
@@ -132,6 +133,7 @@ function renderProjectChecklistAdmin(project, checklist, progress) {
         <strong>${progress.percent}%</strong>
       </div>
       <div class="progress compactProgress"><span style="width:${progress.percent}%"></span></div>
+      ${incomplete.length ? `<div class="alert">Para abrir este proyecto al publico, completa los ${incomplete.length} requisitos pendientes.</div>` : `<div class="success">Expediente completo. El proyecto puede marcarse como abierto.</div>`}
       <div class="checklistList">
         ${checklist.map((item) => `
           <form class="checklistRow" method="post" action="/admin/projects/checklist/${item.id}">
@@ -573,6 +575,10 @@ function registerAdminRoutes(app) {
       if (uploadedImage) payload.image_url = uploadedImage;
       const duplicate = store.get("SELECT id FROM projects WHERE slug = ? AND id != ?", [payload.slug, project.id]);
       if (duplicate) throw new Error("Ya existe otro proyecto con ese slug.");
+      if (payload.status === "open" && project.status !== "open") {
+        const missing = incompleteChecklistItems(project.id);
+        if (missing.length) throw new Error(`Antes de abrir el proyecto, completa el checklist profesional. Pendientes: ${missing.map((item) => item.label).join(", ")}.`);
+      }
     } catch (error) {
       const body = form ? form.fields : {};
       return res.status(400).send(layout("Editar proyecto", projectForm({ id: project.id, ...body }, body, error.message), req));

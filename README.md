@@ -75,15 +75,9 @@ La app puede mostrar una pagina independiente por subdominio de proyecto. Ejempl
 
 - `cacaobayaguana.dominicana.com`
 - `cacaobayagua.dominicana.com`
-- `lionelthestar.tokenizas.dominicana.com`
+- `lionelthestar.dominicana.com`
 
-Cada subdominio debe apuntar al mismo servidor que `tokenizas.dominicana.com`. Para nuevos proyectos se recomienda usar subdominios bajo `tokenizas.dominicana.com`:
-
-```text
-*.tokenizas.dominicana.com  A  161.97.101.50
-```
-
-Si tambien quieres mantener microsites directos bajo `dominicana.com`, deja este wildcard adicional:
+Cada subdominio debe apuntar al mismo servidor que `tokenizas.dominicana.com`. En DNS crea este registro wildcard, o crea registros A individuales para cada proyecto:
 
 ```text
 *.dominicana.com  A  161.97.101.50
@@ -92,7 +86,7 @@ Si tambien quieres mantener microsites directos bajo `dominicana.com`, deja este
 En Nginx, agrega el wildcard al `server_name` del mismo sitio:
 
 ```nginx
-server_name tokenizas.dominicana.com *.tokenizas.dominicana.com *.dominicana.com;
+server_name tokenizas.dominicana.com *.dominicana.com;
 ```
 
 Despues recarga Nginx:

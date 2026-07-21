@@ -163,7 +163,7 @@ function renderProjectChecklistAdmin(project, checklist, progress) {
 
 function projectForm(project = {}, offering = {}, error = "", extraContent = "") {
   const isEdit = Boolean(project.id);
-  const micrositeUrl = project.microsite_slug ? `https://${project.microsite_slug}.tokenizas.dominicana.com` : "";
+  const micrositeUrl = project.microsite_slug ? `https://${project.microsite_slug}.dominicana.com` : "";
   return `
     <main class="page">
       <div class="sectionHead">

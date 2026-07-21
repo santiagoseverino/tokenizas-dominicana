@@ -8,6 +8,7 @@
     "seed": "node src/seed.js",
     "seed:cacao": "node src/seed-cacao.js",
     "seed:lionel": "node src/seed-lionel.js",
+    "seed:marketplace": "node src/seed-marketplace.js",
     "solana:wallet": "node src/tools/create-solana-wallet.js",
     "solana:check": "node src/tools/check-solana-wallet.js",
     "receipts:sync": "node src/tools/sync-issued-receipts.js",

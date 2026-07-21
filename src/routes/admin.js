@@ -98,6 +98,17 @@ function renderIssuedInvestment(item) {
   return `<div class="event"><b>Orden #${item.id} - ${item.investor_name} - ${item.project_title}</b><span>${item.tokens} ${item.token_symbol} - ${statusLabel(item.status)} - Pago: ${paymentStatus}</span><p>${item.payment_signature ? `Pago: ${item.payment_signature}` : "Pago confirmado"}${item.issue_signature ? ` - Emision: ${item.issue_signature}` : ""}${item.issued_at ? ` - Emitida: ${item.issued_at}` : ""}</p>${item.issue_mint_address ? `<span class="monoBreak">Mint: ${item.issue_mint_address}</span>` : ""}${item.issue_token_account ? `<span class="monoBreak">Token account: ${item.issue_token_account}</span>` : ""}<div class="inlineActions">${paymentLink}${issueLink}${mintLink}</div></div>`;
 }
 
+function renderMarketplaceListing(item) {
+  return `<div class="event"><b>Listado #${item.id} - ${item.project_title}</b><span>${item.seller_name} - ${number.format(item.quantity)} ${item.token_symbol} - ${money.format(item.price_per_token)} / token - ${item.status}</span><p>Total: ${money.format(Number(item.quantity) * Number(item.price_per_token))} - Creado: ${item.created_at}</p>${item.status === "active" ? `<form method="post" action="/admin/marketplace/listings/${item.id}/cancel"><button class="button danger small" type="submit">Cancelar listado</button></form>` : ""}</div>`;
+}
+
+function renderMarketplaceTrade(item) {
+  const transferLink = looksLikeSolanaSignature(item.transfer_signature)
+    ? `<a class="button small" href="${solanaExplorerTx(item.transfer_signature)}" target="_blank" rel="noopener">Ver transferencia</a>`
+    : "";
+  return `<div class="event"><b>Trade #${item.id} - ${item.project_title}</b><span>Vendedor: ${item.seller_name} - Comprador: ${item.buyer_name}</span><p>${number.format(item.quantity)} ${item.token_symbol} - ${money.format(item.price_per_token)} / token - Total ${money.format(item.total_amount)} - ${item.status}</p>${item.mint_address ? `<span class="monoBreak">Mint: ${item.mint_address}</span>` : ""}${item.seller_wallet ? `<span class="monoBreak">Seller wallet: ${item.seller_wallet}</span>` : ""}${item.buyer_wallet ? `<span class="monoBreak">Buyer wallet: ${item.buyer_wallet}</span>` : ""}${item.transfer_signature ? `<span class="monoBreak">Firma: ${item.transfer_signature}</span>` : ""}<div class="inlineActions">${transferLink}${item.status === "pending_onchain_transfer" ? `<form method="post" action="/admin/marketplace/trades/${item.id}/review"><button class="button small" type="submit">Marcar en revision</button></form>` : ""}</div></div>`;
+}
+
 function projectForm(project = {}, offering = {}, error = "") {
   const isEdit = Boolean(project.id);
   return `
@@ -194,6 +205,7 @@ function registerAdminRoutes(app) {
             <a class="button small" href="/admin/kyc">KYC</a>
             <a class="button small" href="/admin/issuers">Dueños</a>
             <a class="button small" href="/admin/tokenization">Tokenizacion</a>
+            <a class="button small" href="/admin/marketplace">Marketplace</a>
             <a class="button small" href="/admin/settings">Seguridad</a>
             <a class="button danger small" href="/logout">${t.logout}</a>
           </div>
@@ -208,6 +220,70 @@ function registerAdminRoutes(app) {
         </section>
       </main>
     `, req));
+  });
+
+  app.get("/admin/marketplace", requireAdmin, (req, res) => {
+    const activeListings = store.all(`
+      SELECT ml.*, p.title project_title, u.name seller_name
+      FROM marketplace_listings ml
+      JOIN projects p ON p.id = ml.project_id
+      JOIN users u ON u.id = ml.seller_user_id
+      WHERE ml.status = 'active'
+      ORDER BY ml.created_at DESC
+    `);
+    const pendingTrades = store.all(`
+      SELECT mt.*, p.title project_title, seller.name seller_name, buyer.name buyer_name
+      FROM marketplace_trades mt
+      JOIN projects p ON p.id = mt.project_id
+      JOIN users seller ON seller.id = mt.seller_user_id
+      JOIN users buyer ON buyer.id = mt.buyer_user_id
+      WHERE mt.status IN ('pending_onchain_transfer', 'review')
+      ORDER BY mt.created_at DESC
+    `);
+    const completedTrades = store.all(`
+      SELECT mt.*, p.title project_title, seller.name seller_name, buyer.name buyer_name
+      FROM marketplace_trades mt
+      JOIN projects p ON p.id = mt.project_id
+      JOIN users seller ON seller.id = mt.seller_user_id
+      JOIN users buyer ON buyer.id = mt.buyer_user_id
+      WHERE mt.status IN ('settled_onchain', 'settled_internal')
+      ORDER BY mt.created_at DESC
+      LIMIT 30
+    `);
+    res.send(layout("Admin Marketplace", `
+      <main class="page adminPage">
+        <div class="adminHero">
+          <div>
+            <p class="eyebrow">Mercado secundario</p>
+            <h1>Control del marketplace</h1>
+            <p class="muted">Supervisa listados, compras pendientes de transferencia SPL, ventas completadas y trazabilidad on-chain.</p>
+          </div>
+          <div class="adminActions"><a class="button small" href="/admin">Volver</a><a class="button danger small" href="/logout">${tr(req).logout}</a></div>
+        </div>
+        <section class="metrics compact">
+          <article><strong>${activeListings.length}</strong><span>Listados activos</span></article>
+          <article><strong>${pendingTrades.length}</strong><span>Ventas pendientes</span></article>
+          <article><strong>${completedTrades.length}</strong><span>Ventas completadas</span></article>
+        </section>
+        <section class="split">
+          <div class="panel adminPanel"><h3>Listados activos</h3>${activeListings.map(renderMarketplaceListing).join("") || "<p class=\"muted\">No hay listados activos.</p>"}</div>
+          <div class="panel adminPanel"><h3>Ventas pendientes SPL</h3>${pendingTrades.map(renderMarketplaceTrade).join("") || "<p class=\"muted\">No hay ventas pendientes.</p>"}</div>
+        </section>
+        <section class="panel adminPanel"><h3>Ventas completadas</h3>${completedTrades.map(renderMarketplaceTrade).join("") || "<p class=\"muted\">No hay ventas completadas.</p>"}</section>
+      </main>
+    `, req));
+  });
+
+  app.post("/admin/marketplace/listings/:id/cancel", requireAdmin, (req, res) => {
+    store.run("UPDATE marketplace_listings SET status = 'canceled', canceled_at = ? WHERE id = ? AND status = 'active'", [new Date().toISOString(), req.params.id]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'canceled_marketplace_listing', ?, 'Listado cancelado desde admin', ?)", [`listing:${req.params.id}`, new Date().toISOString()]);
+    res.redirect("/admin/marketplace");
+  });
+
+  app.post("/admin/marketplace/trades/:id/review", requireAdmin, (req, res) => {
+    store.run("UPDATE marketplace_trades SET status = 'review' WHERE id = ? AND status = 'pending_onchain_transfer'", [req.params.id]);
+    store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'review_marketplace_trade', ?, 'Trade marcado en revision', ?)", [`trade:${req.params.id}`, new Date().toISOString()]);
+    res.redirect("/admin/marketplace");
   });
 
   app.get("/admin/settings", requireAdmin, (req, res) => {

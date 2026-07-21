@@ -69,6 +69,35 @@ El panel `/admin/tokenization` usara devnet real cuando esa llave exista. Sin es
 
 Ver [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md) para subirlo a GitHub e instalarlo en Ubuntu/Contabo con systemd, Nginx, dominio y HTTPS.
 
+## Microsites por proyecto
+
+La app puede mostrar una pagina independiente por subdominio de proyecto. Ejemplos:
+
+- `cacaobayaguana.dominicana.com`
+- `cacaobayagua.dominicana.com`
+- `lionelthestarentertainment.dominicana.com`
+
+Cada subdominio debe apuntar al mismo servidor que `tokenizas.dominicana.com`. En DNS crea un registro wildcard:
+
+```text
+*.dominicana.com  A  161.97.101.50
+```
+
+En Nginx, agrega el wildcard al `server_name` del mismo sitio:
+
+```nginx
+server_name tokenizas.dominicana.com *.dominicana.com;
+```
+
+Despues recarga Nginx:
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+Para HTTPS wildcard se necesita un certificado wildcard con DNS challenge, o emitir certificados individuales por subdominio cuando se vayan usando.
+
 ## Nota
 
 El modo devnet usa SPL Token basico. Para produccion se debe completar Solana Token Extensions, Transfer Hook, multisig, custodia, monitoreo on-chain y auditoria legal/tecnica.

@@ -14,6 +14,7 @@ const registerInvestorRoutes = require("./routes/investor");
 const registerIssuerRoutes = require("./routes/issuer");
 const registerLegalRoutes = require("./routes/legal");
 const registerMarketplaceRoutes = require("./routes/marketplace");
+const registerMicrositeRoutes = require("./routes/microsites");
 const registerProjectRoutes = require("./routes/projects");
 
 const app = express();
@@ -27,6 +28,7 @@ app.get("/health", (req, res) => {
   res.json({ ok: true, service: "tokenizas-dominicana" });
 });
 
+registerMicrositeRoutes(app);
 registerHomeRoutes(app);
 registerAuthRoutes(app);
 registerLegalRoutes(app);

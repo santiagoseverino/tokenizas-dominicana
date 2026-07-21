@@ -96,6 +96,40 @@ function passwordResetEmailText({ name, resetUrl }) {
   ].join("\n");
 }
 
+function projectApprovedEmailHtml({ application, projectUrl }) {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#082f49;line-height:1.5">
+      <h2>Tu proyecto fue aprobado y creado en Tokenizas Dominicana</h2>
+      <p>Hola ${application.owner_name || "equipo"},</p>
+      <p>La solicitud <strong>${application.project_name}</strong> fue aprobada y ya fue construida como proyecto tokenizable en la plataforma.</p>
+      <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;border:1px solid #d5e2ea">
+        <tr><td><strong>Proyecto</strong></td><td>${application.project_name}</td></tr>
+        <tr><td><strong>Categoria</strong></td><td>${application.category}</td></tr>
+        <tr><td><strong>Meta</strong></td><td>US$ ${Number(application.target_raise || 0).toLocaleString("en-US")}</td></tr>
+      </table>
+      <p style="margin-top:18px"><a href="${projectUrl}" style="display:inline-block;background:#06b6d4;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Ver proyecto</a></p>
+      <p>Nuestro equipo continuara con la revision operativa, documentos, tokenomics, KYC/KYB y preparacion de la oferta.</p>
+    </div>
+  `;
+}
+
+function projectApprovedEmailText({ application, projectUrl }) {
+  return [
+    "Tu proyecto fue aprobado y creado en Tokenizas Dominicana",
+    "",
+    `Hola ${application.owner_name || "equipo"},`,
+    "",
+    `La solicitud ${application.project_name} fue aprobada y ya fue construida como proyecto tokenizable en la plataforma.`,
+    "",
+    `Categoria: ${application.category}`,
+    `Meta: US$ ${Number(application.target_raise || 0).toLocaleString("en-US")}`,
+    "",
+    `Ver proyecto: ${projectUrl}`,
+    "",
+    "Nuestro equipo continuara con la revision operativa, documentos, tokenomics, KYC/KYB y preparacion de la oferta."
+  ].join("\n");
+}
+
 function createTransporter() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -157,4 +191,19 @@ async function sendPasswordReset(user, resetUrl) {
   return { sent: true, messageId: info.messageId };
 }
 
-module.exports = { notifyLead, sendPasswordReset, smtpConfigured };
+async function notifyProjectOwnerApproved(application, projectUrl) {
+  if (!smtpConfigured()) return { sent: false, reason: "smtp_not_configured" };
+  const transporter = createTransporter();
+  const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
+  const info = await transporter.sendMail({
+    from,
+    to: application.email,
+    replyTo: process.env.ADMIN_NOTIFY_EMAIL,
+    subject: `Proyecto aprobado: ${application.project_name}`,
+    text: projectApprovedEmailText({ application, projectUrl }),
+    html: projectApprovedEmailHtml({ application, projectUrl })
+  });
+  return { sent: true, messageId: info.messageId };
+}
+
+module.exports = { notifyLead, notifyProjectOwnerApproved, sendPasswordReset, smtpConfigured };

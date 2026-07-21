@@ -10,6 +10,7 @@ const { layout, money, number, statusLabel } = require("../lib/ui");
 const { ensureProjectMint, issueTokensForInvestment } = require("../lib/tokenization");
 const { isRealSolanaEnabled, isValidSolanaAddress } = require("../lib/solana");
 const { seedCacaoMarketplaceDemo } = require("../lib/marketplace-demo");
+const { notifyProjectOwnerApproved } = require("../lib/notifications");
 
 const uploadDir = path.join(__dirname, "..", "..", "public", "uploads");
 const projectCategories = [
@@ -246,7 +247,7 @@ function createProjectFromIssuerApplication(application) {
   ].forEach((title) => {
     store.run("INSERT INTO documents (project_id, title, category, status) VALUES (?, ?, 'legal', 'review')", [project.id, title]);
   });
-  store.run("UPDATE issuer_applications SET status = 'approved', reviewed_at = ? WHERE id = ?", [now, application.id]);
+  store.run("UPDATE issuer_applications SET status = 'approved', project_id = ?, reviewed_at = ? WHERE id = ?", [project.id, now, application.id]);
   store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'created_project_from_issuer', ?, ?, ?)", [application.project_name, `project:${project.id}`, now]);
   return project;
 }
@@ -659,11 +660,19 @@ function registerAdminRoutes(app) {
     res.redirect(`/admin/issuers/${application.id}`);
   });
 
-  app.post("/admin/issuers/:id/create-project", requireAdmin, (req, res) => {
+  app.post("/admin/issuers/:id/create-project", requireAdmin, async (req, res) => {
     const application = store.get("SELECT * FROM issuer_applications WHERE id = ?", [req.params.id]);
     if (!application) return res.status(404).send("Solicitud no encontrada");
     try {
       const project = createProjectFromIssuerApplication(application);
+      const projectUrl = `${req.protocol}://${req.get("host")}/projects/${project.slug}`;
+      const result = await notifyProjectOwnerApproved(application, projectUrl);
+      if (result.sent) {
+        store.run("UPDATE issuer_applications SET owner_notified_at = ? WHERE id = ?", [new Date().toISOString(), application.id]);
+        store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'sent_project_owner_approval_email', ?, ?, ?)", [application.email, project.slug, new Date().toISOString()]);
+      } else {
+        store.run("INSERT INTO audit_logs (actor, action, entity, details, created_at) VALUES ('Admin', 'skipped_project_owner_approval_email', ?, ?, ?)", [application.email, result.reason || "not_sent", new Date().toISOString()]);
+      }
       res.redirect(`/admin/projects/${project.id}`);
     } catch (error) {
       res.status(400).send(layout("Crear proyecto", `<main class="page"><div class="panel"><div class="alert">${errorMessage(error)}</div><p><a class="button small" href="/admin/issuers/${application.id}">Volver</a></p></div></main>`, req));

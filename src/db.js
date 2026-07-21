@@ -262,6 +262,8 @@ function migrate() {
       project_description TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'submitted',
       internal_notes TEXT,
+      project_id INTEGER,
+      owner_notified_at TEXT,
       created_at TEXT NOT NULL,
       reviewed_at TEXT
     );
@@ -285,6 +287,7 @@ function migrate() {
   const userColumns = all("PRAGMA table_info(users)").map((column) => column.name);
   const investmentColumns = all("PRAGMA table_info(investments)").map((column) => column.name);
   const tradeColumns = all("PRAGMA table_info(marketplace_trades)").map((column) => column.name);
+  const issuerColumns = all("PRAGMA table_info(issuer_applications)").map((column) => column.name);
   if (!userColumns.includes("password_hash")) {
     db.run("ALTER TABLE users ADD COLUMN password_hash TEXT");
   }
@@ -344,6 +347,12 @@ function migrate() {
   }
   if (!tradeColumns.includes("mint_address")) {
     db.run("ALTER TABLE marketplace_trades ADD COLUMN mint_address TEXT");
+  }
+  if (!issuerColumns.includes("project_id")) {
+    db.run("ALTER TABLE issuer_applications ADD COLUMN project_id INTEGER");
+  }
+  if (!issuerColumns.includes("owner_notified_at")) {
+    db.run("ALTER TABLE issuer_applications ADD COLUMN owner_notified_at TEXT");
   }
   if (!projectColumns.includes("category")) {
     db.run("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'real-estate'");

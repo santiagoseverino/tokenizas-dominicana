@@ -22,6 +22,13 @@ const projectCategories = [
   ["business", "Negocios"],
   ["energy", "Energia"]
 ];
+const projectTypes = [
+  "Renta corta turistica",
+  "Desarrollo residencial urbano",
+  "Deuda inmobiliaria",
+  "Hotel / hospitality",
+  "Salud / Wellness"
+];
 
 function slugify(value) {
   return String(value || "")
@@ -127,7 +134,7 @@ function projectForm(project = {}, offering = {}, error = "") {
           <label>Slug publico<input name="slug" value="${project.slug || ""}" placeholder="se genera si queda vacio" /></label>
           <label>Categoria<select name="category">${projectCategories.map(([value, label]) => `<option value="${value}" ${project.category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
           <label>Ubicacion<input name="location" value="${project.location || ""}" required /></label>
-          <label>Tipo<select name="type"><option ${project.type === "Renta corta turistica" ? "selected" : ""}>Renta corta turistica</option><option ${project.type === "Desarrollo residencial urbano" ? "selected" : ""}>Desarrollo residencial urbano</option><option ${project.type === "Deuda inmobiliaria" ? "selected" : ""}>Deuda inmobiliaria</option><option ${project.type === "Hotel / hospitality" ? "selected" : ""}>Hotel / hospitality</option></select></label>
+          <label>Tipo<select name="type">${projectTypes.map((type) => `<option ${project.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></label>
           <label>Meta USD<input name="target_raise" type="number" min="10000" step="1000" value="${project.target_raise || 1000000}" required /></label>
           <label>Minimo USD<input name="min_investment" type="number" min="100" step="100" value="${project.min_investment || 1000}" required /></label>
           <label>Simbolo token<input name="token_symbol" maxlength="10" value="${project.token_symbol || ""}" required /></label>
@@ -208,7 +215,7 @@ function createProjectFromIssuerApplication(application) {
     application.category || "health-wellness",
     application.project_name,
     application.location,
-    application.category === "health-wellness" ? "Health and wellness project" : "Proyecto tokenizable",
+    application.category === "health-wellness" ? "Salud / Wellness" : "Proyecto tokenizable",
     application.legal_structure,
     targetRaise,
     Math.min(100, targetRaise),
